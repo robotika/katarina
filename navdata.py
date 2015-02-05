@@ -15,7 +15,7 @@ g_seq = 1
 def packData( payload ):
     global g_seq
     frameType = 2
-    frameId = 0x40 #127 # 10 # up to 127? no idea
+    frameId = 10 # up to 127? no idea
     frameSeq = g_seq
     g_seq += 1
     buf = struct.pack("<BBBI", frameType, frameId, frameSeq % 256, len(payload)+7)
