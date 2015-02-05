@@ -11,12 +11,19 @@ def printHex( data ):
     print " ".join(["%02X" % ord(x) for x in data])
 
 def parseData( data ):
-    assert data[0] == chr(0x2), ord(data[0])    
-    assert ord(data[1]) in [0x7F, 0x0], ord(data[1])
-    counter = ord(data[2])
-    size = ord(data[3])
-    assert size in [15, 19, 23, 35], size
-    if ord(data[1]) == 0x7F:
+    # m:\git\ARDroneSDK3\libARNetworkAL\Includes\libARNetworkAL\ARNETWORKAL_Frame.h 
+    #   uint8_t type; /**< frame type eARNETWORK_FRAME_TYPE */
+    #   uint8_t id; /**< identifier of the buffer sending the frame */
+    #   uint8_t seq; /**< sequence number of the frame */
+    #   uint32_t size; /**< size of the frame */
+    #   uint8_t *dataPtr; /**< pointer on the data of the frame */
+    # 
+    assert len(data) >= 7+4, len(data)
+    frameType, frameId, frameSeq, frameSize = struct.unpack("<BBBI", data[:7])
+    assert frameType == 0x2, frameType # 0x2 = ARNETWORKAL_FRAME_TYPE_DATA
+    assert frameId in [0x7F, 0x0], frameId
+    assert frameSize in [15, 19, 23, 35], frameSize
+    if frameId == 0x7F:
         commandProject, commandClass, commandId = struct.unpack("BBH",  data[7:7+4])
         assert commandProject == 1, commandProject
         if (commandClass, commandId) == (4,4):
@@ -31,7 +38,7 @@ def parseData( data ):
         if (commandClass, commandId) == (4,8):
             altitude = struct.unpack("d", data[11:11+8])[0]
             print "Altitude", altitude
-    data = data[size:]
+    data = data[frameSize:]
     return data
 
 if __name__ == "__main__":
