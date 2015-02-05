@@ -7,6 +7,8 @@
 import sys
 import socket
 import datetime
+import struct
+from navdata import packData
 
 # hits from https://github.com/ARDroneSDK3/ARSDKBuildUtils/issues/5
 
@@ -19,11 +21,13 @@ COMMAND_PORT = 54321 # c2d_port
 class Bebop:
     def __init__( self ):
         logFilename = datetime.datetime.now().strftime("navdata_%y%m%d_%H%M%S.bin") # TODO metalog
+        cmdFilename = datetime.datetime.now().strftime("cmd_%y%m%d_%H%M%S.bin")
         self.navdata = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.navdata.bind( ('',NAVDATA_PORT) )
 #        self.navdata.settimeout( SOCKET_TIMEOUT )
         self.command = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.logf = open( logFilename, "wb" )
+        self.logCmd = open( cmdFilename, "wb" )
 
     def update( self, cmd ):
         "send command and return navdata"
@@ -32,7 +36,13 @@ class Bebop:
             data = self.navdata.recv(4094)
         self.logf.write(data)
         self.logf.flush()
-        # TODO send cmd
+        if cmd is not None:
+            data = packData( payload=cmd )
+            self.logCmd.write( data )
+            self.logCmd.flush()
+            self.command.sendto( data, (HOST, COMMAND_PORT) )
+        self.logCmd.write( "\xFF" ) # remove this when every update will contain valid cmd
+        self.logCmd.flush()
         return data
 
 
@@ -51,7 +61,14 @@ def test( outDir ):
             break
 
     robot = Bebop()
+    for i in xrange(10):
+        robot.update( cmd=None )
+    # ARCOMMANDS_ID_PROJECT_ARDRONE3 = 1
+    # ARCOMMANDS_ID_ARDRONE3_CLASS_GPSSETTINGS = 23
+    # ARCOMMANDS_ID_ARDRONE3_GPSSETTINGS_CMD_RESETHOME = 1
+    robot.update( cmd=struct.pack("BBH", 1, 23, 1) )
     for i in xrange(100):
+        print i,
         robot.update( cmd=None )
 
     f.close()
