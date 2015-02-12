@@ -34,8 +34,8 @@ class Bebop:
         data = None
         while data == None or len(data) == 0:
             data = self.navdata.recv(4094)
-        self.logf.write(data)
-        self.logf.flush()
+            self.logf.write(data)
+            self.logf.flush()
         if cmd is not None:
             data = packData( payload=cmd )
             self.logCmd.write( data )
