@@ -7,6 +7,7 @@
 import sys
 import struct
 
+ARNETWORKAL_FRAME_TYPE_ACK = 0x1
 ARNETWORKAL_FRAME_TYPE_DATA = 0x2 
 ARNETWORKAL_FRAME_TYPE_DATA_WITH_ACK = 0x4
 
@@ -31,14 +32,14 @@ def packData( payload ):
     return buf + payload
 
 def parseFrameType( data ):
-    if len(data) < 7+4:
+    if len(data) < 7:
         return None
     frameType, frameId, frameSeq, frameSize = struct.unpack("<BBBI", data[:7])
     assert len(data) == frameSize, (len(data), frameSize)
     return frameType
 
 def cutPacket( data ):
-    if len(data) < 7+4:
+    if len(data) < 7:
         return None, data
     frameType, frameId, frameSeq, frameSize = struct.unpack("<BBBI", data[:7])
     return data[:frameSize], data[frameSize:]
@@ -52,12 +53,20 @@ def parseData( data ):
     #   uint32_t size; /**< size of the frame */
     #   uint8_t *dataPtr; /**< pointer on the data of the frame */
     # 
-    assert len(data) >= 7+4, len(data)
+    assert len(data) >= 7, len(data)
     frameType, frameId, frameSeq, frameSize = struct.unpack("<BBBI", data[:7])
-    assert frameType in [0x2, 0x4], frameType # 0x2 = ARNETWORKAL_FRAME_TYPE_DATA, 
+    assert frameType in [0x1, 0x2, 0x4], frameType # 0x2 = ARNETWORKAL_FRAME_TYPE_DATA, 
                                               # 0x4 = ARNETWORKAL_FRAME_TYPE_DATA_WITH_ACK
+    if frameType == ARNETWORKAL_FRAME_TYPE_ACK:
+        assert frameSize == 8, frameSize
+        assert frameId == 0x8B, hex(frameId)
+        print "ACKACK", ord(data[frameSize-1])
+        data = data[frameSize:]
+        return data
+
     assert frameId in [0x7F, 0x0, 0x7E], frameId
-    assert frameSize in [15, 19, 23, 35], frameSize
+    assert frameSize in [12, 15, 19, 23, 35], frameSize
+
     if frameId == 0x7F:
         commandProject, commandClass, commandId = struct.unpack("BBH",  data[7:7+4])
         assert commandProject == 1, commandProject
@@ -96,18 +105,19 @@ def ackRequired( data ):
 def createAckPacket( data ):
     global g_seqAck
 
-    assert len(data) >= 7+4, len(data)
+    assert len(data) >= 7, len(data)
     frameType, frameId, frameSeq, frameSize = struct.unpack("<BBBI", data[:7])
     assert frameType == 0x4, frameType
     assert len(data) == frameSize, (len(data), frameSize)
 
     # get the acknowledge sequence number from the data
-    payload = data[7:8] # strange
-#    payload = struct.pack("B", frameSeq)
+#    payload = data[7:8] # strange
+    payload = struct.pack("B", frameSeq)
+#    payload = struct.pack("B", 1)
     print "ACK", repr(payload)
 
-    frameType = 2
-    frameId = 10 # up to 127? no idea
+    frameType = 0x4
+    frameId = 11
     frameSeq = g_seqAck
     g_seqAck += 1
     buf = struct.pack("<BBBI", frameType, frameId, frameSeq % 256, len(payload)+7)
@@ -115,14 +125,14 @@ def createAckPacket( data ):
 
 
 def pongRequired( data ):
-    if len(data) < 7+4:
+    if len(data) < 7:
         return False
     frameType, frameId, frameSeq, frameSize = struct.unpack("<BBBI", data[:7])
     return frameId == ARNETWORK_MANAGER_INTERNAL_BUFFER_ID_PING
 
 def createPongPacket( data ):
     global g_seqPongAck
-    assert len(data) >= 7+4, len(data)
+    assert len(data) >= 7, len(data)
     frameType, frameId, frameSeq, frameSize = struct.unpack("<BBBI", data[:7])
     assert frameType == 0x2, frameType
     assert frameId == ARNETWORK_MANAGER_INTERNAL_BUFFER_ID_PING, frameId

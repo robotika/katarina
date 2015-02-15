@@ -39,8 +39,7 @@ class Bebop:
             data = self.navdata.recv(4094)
             self.buf += data
         if cmd is not None:
-            data = packData( payload=cmd )
-            self.command.sendto( data, (HOST, COMMAND_PORT) )
+            self.command.sendto( cmd, (HOST, COMMAND_PORT) )
         self.command.separator( "\xFF" )
         data, self.buf = cutPacket( self.buf )
         return data
@@ -73,12 +72,13 @@ def test( task, metalog ):
                 break
 
     robot = Bebop( metalog=metalog )
-#    for i in xrange(10):
-#        robot.update( cmd=None )
+    for i in xrange(10):
+        print -i,
+        robot.update( cmd=None )
     # ARCOMMANDS_ID_PROJECT_ARDRONE3 = 1
     # ARCOMMANDS_ID_ARDRONE3_CLASS_GPSSETTINGS = 23
     # ARCOMMANDS_ID_ARDRONE3_GPSSETTINGS_CMD_RESETHOME = 1
-#    robot.update( cmd=struct.pack("BBH", 1, 23, 1) )
+    robot.update( cmd=packData(struct.pack("BBH", 1, 23, 1)) )
     for i in xrange(1000):
         print i,
         robot.update( cmd=None )
