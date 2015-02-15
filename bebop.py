@@ -8,10 +8,10 @@ import sys
 import socket
 import datetime
 import struct
-from navdata import packData
+from navdata import ackRequired, packData, createAckPacket, cutPacket
 
 # this will be in new separate repository as common library fo robotika Python-powered robots
-from apyros.metalog import MetaLog
+from apyros.metalog import MetaLog, disableAsserts
 
 
 # hits from https://github.com/ARDroneSDK3/ARSDKBuildUtils/issues/5
@@ -30,17 +30,27 @@ class Bebop:
         self.navdata.bind( ('',NAVDATA_PORT) )
         self.command = metalog.createLoggedSocket( "cmd", headerFormat="<BBBI" )
         self.metalog = metalog
+        self.buf = ""
 
 
-    def update( self, cmd ):
-        "send command and return navdata"
-        data = None
-        while data == None or len(data) == 0:
+    def _update( self, cmd ):
+        "internal send command and return navdata"
+        while len(self.buf) == 0:
             data = self.navdata.recv(4094)
+            self.buf += data
         if cmd is not None:
             data = packData( payload=cmd )
             self.command.sendto( data, (HOST, COMMAND_PORT) )
         self.command.separator( "\xFF" )
+        data, self.buf = cutPacket( self.buf )
+        return data
+
+    def update( self, cmd ):
+        "send command and return navdata"
+        data = self._update( cmd )
+        while ackRequired(data):
+            # TODO parse received data
+            data = self._update( createAckPacket(data) )
         return data
 
 
@@ -83,6 +93,8 @@ if __name__ == "__main__":
     metalog=None
     if len(sys.argv) > 2:
         metalog = MetaLog( filename=sys.argv[2] )
+    if len(sys.argv) > 3 and sys.argv[3] == 'F':
+        disableAsserts()
     test( sys.argv[1], metalog=metalog )
 
 # vim: expandtab sw=4 ts=4 

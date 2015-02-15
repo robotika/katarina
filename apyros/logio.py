@@ -38,13 +38,14 @@ class LoggedSocket:
 
 
 class ReplayLog:
-    def __init__( self, filename, headerFormat, verbose=False ):
+    def __init__( self, filename, headerFormat, verbose=False, checkAssert=True ):
         if filename.endswith(".gz"):
             self.f = gzip.open(filename, "rb")
         else:
             self.f = open(filename, "rb")
         self.headerFormat = headerFormat
         self.verbose = verbose
+        self.checkAssert = checkAssert
 
 
     def bind( self, pair ):
@@ -60,12 +61,14 @@ class ReplayLog:
 
     def sendto( self, data, pair ):
         refData = self.f.read( len(data) )
-        assert refData == data, (refData, data)
+        if self.checkAssert:
+            assert refData == data, (refData, data)
 
     def separator( self, sep ):
         "verify data separator"
         data = self.f.read( len(sep) )
-        assert data == sep, (data, sep)
+        if self.checkAssert:
+            assert data == sep, (data, sep)
 
 
 # vim: expandtab sw=4 ts=4 

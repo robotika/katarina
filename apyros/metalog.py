@@ -15,11 +15,20 @@ import sys
 
 from logio import ReplayLog, LoggedSocket
 
+global g_checkAssert
+g_checkAssert = True # use command 'F' to disable it
+
+
+def disableAsserts():
+    global g_checkAssert
+    g_checkAssert = False
+
 class MetaLog:
     def __init__( self, filename=None ):
         if filename is None:
             self.replay = False
             self.filename = datetime.datetime.now().strftime("logs/meta_%y%m%d_%H%M%S.log")
+            print "METALOG:", self.filename
             self.f = open( self.filename, "w" )
             self.f.write( str(sys.argv)+"\n" )
             self.f.flush()
@@ -41,7 +50,7 @@ class MetaLog:
 
     def createLoggedSocket( self, prefix, headerFormat ):
         if self.replay:
-            return ReplayLog( self.getLog( prefix ), headerFormat=headerFormat )
+            return ReplayLog( self.getLog( prefix ), headerFormat=headerFormat, checkAssert=g_checkAssert )
         else:
             filename = "logs/" + prefix + datetime.datetime.now().strftime("_%y%m%d_%H%M%S.bin") # bin? txt? log??
             self.f.write( prefix + ": " + filename + "\n")

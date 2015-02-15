@@ -7,10 +7,16 @@
 import sys
 import struct
 
+ARNETWORKAL_FRAME_TYPE_DATA = 0x2 
+ARNETWORKAL_FRAME_TYPE_DATA_WITH_ACK = 0x4
+
+g_seq = 1
+g_seqAck = 1
+
+
 def printHex( data ):
     print " ".join(["%02X" % ord(x) for x in data])
 
-g_seq = 1
 
 def packData( payload ):
     global g_seq
@@ -20,6 +26,19 @@ def packData( payload ):
     g_seq += 1
     buf = struct.pack("<BBBI", frameType, frameId, frameSeq % 256, len(payload)+7)
     return buf + payload
+
+def parseFrameType( data ):
+    if len(data) < 7+4:
+        return None
+    frameType, frameId, frameSeq, frameSize = struct.unpack("<BBBI", data[:7])
+    assert len(data) == frameSize, (len(data), frameSize)
+    return frameType
+
+def cutPacket( data ):
+    if len(data) < 7+4:
+        return None, data
+    frameType, frameId, frameSeq, frameSize = struct.unpack("<BBBI", data[:7])
+    return data[:frameSize], data[frameSize:]
 
 
 def parseData( data ):
@@ -57,8 +76,40 @@ def parseData( data ):
             assert False
     elif frameId == 0x7E:
         printHex( data[:frameSize] )
+    elif frameId == 0x0: # ARNETWORK_MANAGER_INTERNAL_BUFFER_ID_PING
+        assert frameSize == 15, len(data)
+        seconds, nanoseconds = struct.unpack("<II", data[7:15])
+        assert nanoseconds < 1000000000, nanoseconds
+        timestamp = seconds + nanoseconds/1000000000.
+        print "Time" , timestamp
     data = data[frameSize:]
     return data
+
+
+def ackRequired( data ):
+    return parseFrameType( data ) == ARNETWORKAL_FRAME_TYPE_DATA_WITH_ACK
+
+
+def createAckPacket( data ):
+    global g_seqAck
+
+    assert len(data) >= 7+4, len(data)
+    frameType, frameId, frameSeq, frameSize = struct.unpack("<BBBI", data[:7])
+    assert frameType == 0x4, frameType
+    assert len(data) == frameSize, (len(data), frameSize)
+
+    # get the acknowledge sequence number from the data
+    payload = data[7:8] # strange
+#    payload = struct.pack("B", frameSeq)
+    print "ACK", repr(payload)
+
+    frameType = 2
+    frameId = 10 # up to 127? no idea
+    frameSeq = g_seqAck
+    g_seqAck += 1
+    buf = struct.pack("<BBBI", frameType, frameId, frameSeq % 256, len(payload)+7)
+    return buf + payload
+
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
