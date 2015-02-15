@@ -10,9 +10,12 @@ import struct
 ARNETWORKAL_FRAME_TYPE_DATA = 0x2 
 ARNETWORKAL_FRAME_TYPE_DATA_WITH_ACK = 0x4
 
+ARNETWORK_MANAGER_INTERNAL_BUFFER_ID_PING = 0
+ARNETWORK_MANAGER_INTERNAL_BUFFER_ID_PONG = 1
+
 g_seq = 1
 g_seqAck = 1
-
+g_seqPongAck = 1
 
 def printHex( data ):
     print " ".join(["%02X" % ord(x) for x in data])
@@ -107,6 +110,29 @@ def createAckPacket( data ):
     frameId = 10 # up to 127? no idea
     frameSeq = g_seqAck
     g_seqAck += 1
+    buf = struct.pack("<BBBI", frameType, frameId, frameSeq % 256, len(payload)+7)
+    return buf + payload
+
+
+def pongRequired( data ):
+    if len(data) < 7+4:
+        return False
+    frameType, frameId, frameSeq, frameSize = struct.unpack("<BBBI", data[:7])
+    return frameId == ARNETWORK_MANAGER_INTERNAL_BUFFER_ID_PING
+
+def createPongPacket( data ):
+    global g_seqPongAck
+    assert len(data) >= 7+4, len(data)
+    frameType, frameId, frameSeq, frameSize = struct.unpack("<BBBI", data[:7])
+    assert frameType == 0x2, frameType
+    assert frameId == ARNETWORK_MANAGER_INTERNAL_BUFFER_ID_PING, frameId
+    assert len(data) == frameSize, (len(data), frameSize)
+
+    payload = data[7:]
+    frameType = 2
+    frameId = ARNETWORK_MANAGER_INTERNAL_BUFFER_ID_PONG
+    frameSeq = g_seqPongAck
+    g_seqPongAck += 1
     buf = struct.pack("<BBBI", frameType, frameId, frameSeq % 256, len(payload)+7)
     return buf + payload
 

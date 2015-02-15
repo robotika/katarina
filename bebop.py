@@ -8,7 +8,7 @@ import sys
 import socket
 import datetime
 import struct
-from navdata import ackRequired, packData, createAckPacket, cutPacket
+from navdata import *
 
 # this will be in new separate repository as common library fo robotika Python-powered robots
 from apyros.metalog import MetaLog, disableAsserts
@@ -51,6 +51,8 @@ class Bebop:
         while ackRequired(data):
             # TODO parse received data
             data = self._update( createAckPacket(data) )
+        while pongRequired(data):
+            data = self._update( createPongPacket(data) )
         return data
 
 
@@ -71,13 +73,13 @@ def test( task, metalog ):
                 break
 
     robot = Bebop( metalog=metalog )
-    for i in xrange(10):
-        robot.update( cmd=None )
+#    for i in xrange(10):
+#        robot.update( cmd=None )
     # ARCOMMANDS_ID_PROJECT_ARDRONE3 = 1
     # ARCOMMANDS_ID_ARDRONE3_CLASS_GPSSETTINGS = 23
     # ARCOMMANDS_ID_ARDRONE3_GPSSETTINGS_CMD_RESETHOME = 1
-    robot.update( cmd=struct.pack("BBH", 1, 23, 1) )
-    for i in xrange(100):
+#    robot.update( cmd=struct.pack("BBH", 1, 23, 1) )
+    for i in xrange(1000):
         print i,
         robot.update( cmd=None )
 
