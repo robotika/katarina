@@ -87,7 +87,12 @@ def parseData( data ):
             printHex( data[:frameSize] )
             assert False
     elif frameId == 0x7E:
-        printHex( data[:frameSize] )
+        commandProject, commandClass, commandId = struct.unpack("BBH",  data[7:7+4])
+        if (commandProject, commandClass, commandId) == (0,5,1):
+            battery = struct.unpack("B", data[11:12])[0]
+            print "Battery", battery
+        else:
+            printHex( data[:frameSize] )
     elif frameId == 0x0: # ARNETWORK_MANAGER_INTERNAL_BUFFER_ID_PING
         assert frameSize == 15, len(data)
         seconds, nanoseconds = struct.unpack("<II", data[7:15])
