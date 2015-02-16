@@ -121,8 +121,8 @@ def createAckPacket( data ):
 #    payload = struct.pack("B", 1)
     print "ACK", repr(payload)
 
-    frameType = 0x4
-    frameId = 11
+    frameType = ARNETWORKAL_FRAME_TYPE_ACK
+    frameId = 0xFE # 0x7E + 0x80
     frameSeq = g_seqAck
     g_seqAck += 1
     buf = struct.pack("<BBBI", frameType, frameId, frameSeq % 256, len(payload)+7)
