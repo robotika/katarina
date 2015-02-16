@@ -9,6 +9,7 @@ import struct
 
 ARNETWORKAL_FRAME_TYPE_ACK = 0x1
 ARNETWORKAL_FRAME_TYPE_DATA = 0x2 
+ARNETWORKAL_FRAME_TYPE_DATA_LOW_LATENCY = 0x3
 ARNETWORKAL_FRAME_TYPE_DATA_WITH_ACK = 0x4
 
 ARNETWORK_MANAGER_INTERNAL_BUFFER_ID_PING = 0
@@ -55,12 +56,22 @@ def parseData( data ):
     # 
     assert len(data) >= 7, len(data)
     frameType, frameId, frameSeq, frameSize = struct.unpack("<BBBI", data[:7])
-    assert frameType in [0x1, 0x2, 0x4], frameType # 0x2 = ARNETWORKAL_FRAME_TYPE_DATA, 
+    assert frameType in [0x1, 0x2, 0x3, 0x4], frameType # 0x2 = ARNETWORKAL_FRAME_TYPE_DATA, 
                                               # 0x4 = ARNETWORKAL_FRAME_TYPE_DATA_WITH_ACK
     if frameType == ARNETWORKAL_FRAME_TYPE_ACK:
         assert frameSize == 8, frameSize
         assert frameId == 0x8B, hex(frameId)
         print "ACKACK", ord(data[frameSize-1])
+        data = data[frameSize:]
+        return data
+
+    if frameType == ARNETWORKAL_FRAME_TYPE_DATA_LOW_LATENCY: # 0x3
+        assert frameSize >= 12, frameSize
+        assert frameId == 0x7D, hex(frameId)
+        #printHex( data[:20] )
+        f = open("video.bin","ab")
+        f.write( data[12:frameSize] )
+        f.close()
         data = data[frameSize:]
         return data
 

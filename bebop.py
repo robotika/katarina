@@ -46,7 +46,10 @@ class Bebop:
 
     def update( self, cmd ):
         "send command and return navdata"
-        data = self._update( cmd )
+        if cmd is None:
+            data = self._update( None )
+        else:
+            data = self._update( packData(cmd) )
         while ackRequired(data):
             # TODO parse received data
             data = self._update( createAckPacket(data) )
@@ -54,6 +57,19 @@ class Bebop:
             data = self._update( createPongPacket(data) )
         return data
 
+
+    def videoEnable( self ):
+        "enable video stream?"
+        # ARCOMMANDS_ID_PROJECT_ARDRONE3 = 1,
+        # ARCOMMANDS_ID_ARDRONE3_CLASS_MEDIASTREAMING = 21,
+        # ARCOMMANDS_ID_ARDRONE3_MEDIASTREAMING_CMD_VIDEOENABLE = 0,        
+        self.update( cmd=struct.pack("BBHB", 1, 21, 0, 1) )
+
+    def resetHome( self ):
+        # ARCOMMANDS_ID_PROJECT_ARDRONE3 = 1
+        # ARCOMMANDS_ID_ARDRONE3_CLASS_GPSSETTINGS = 23
+        # ARCOMMANDS_ID_ARDRONE3_GPSSETTINGS_CMD_RESETHOME = 1
+        self.update( cmd=struct.pack("BBH", 1, 23, 1) )
 
 
 def test( task, metalog ):
@@ -75,11 +91,9 @@ def test( task, metalog ):
     for i in xrange(10):
         print -i,
         robot.update( cmd=None )
-    # ARCOMMANDS_ID_PROJECT_ARDRONE3 = 1
-    # ARCOMMANDS_ID_ARDRONE3_CLASS_GPSSETTINGS = 23
-    # ARCOMMANDS_ID_ARDRONE3_GPSSETTINGS_CMD_RESETHOME = 1
-    robot.update( cmd=packData(struct.pack("BBH", 1, 23, 1)) )
-    for i in xrange(1000):
+    robot.resetHome()
+    robot.videoEnable()
+    for i in xrange(100):
         print i,
         robot.update( cmd=None )
 
