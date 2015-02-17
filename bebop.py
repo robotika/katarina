@@ -50,11 +50,16 @@ class Bebop:
             data = self._update( None )
         else:
             data = self._update( packData(cmd) )
-        while ackRequired(data):
-            # TODO parse received data
-            data = self._update( createAckPacket(data) )
-        while pongRequired(data):
-            data = self._update( createPongPacket(data) )
+        while True:
+            if ackRequired(data):
+                data = self._update( createAckPacket(data) )
+            elif pongRequired(data):
+                data = self._update( createPongPacket(data) )
+            elif videoAckRequired(data):
+                data = self._update( createVideoAckPacket(data) )
+            else:
+                break
+
         return data
 
 

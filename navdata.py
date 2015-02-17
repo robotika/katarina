@@ -18,6 +18,7 @@ ARNETWORK_MANAGER_INTERNAL_BUFFER_ID_PONG = 1
 g_seq = 1
 g_seqAck = 1
 g_seqPongAck = 1
+g_seqVideoAck = 1
 
 def printHex( data ):
     print " ".join(["%02X" % ord(x) for x in data])
@@ -159,6 +160,38 @@ def createPongPacket( data ):
     frameId = ARNETWORK_MANAGER_INTERNAL_BUFFER_ID_PONG
     frameSeq = g_seqPongAck
     g_seqPongAck += 1
+    buf = struct.pack("<BBBI", frameType, frameId, frameSeq % 256, len(payload)+7)
+    return buf + payload
+
+
+def videoAckRequired( data ):
+    if len(data) < 7:
+        return False
+    frameType, frameId, frameSeq, frameSize = struct.unpack("<BBBI", data[:7])
+    return frameType == ARNETWORKAL_FRAME_TYPE_DATA_LOW_LATENCY and frameId == 0x7D
+
+g_currentVideoFrameNumber = None
+g_lowPacketsAck = 0
+
+def createVideoAckPacket( data ):
+    global g_currentVideoFrameNumber, g_lowPacketsAck, g_seqVideoAck
+
+    assert len(data) >= 12, len(data)
+    frameNumber, frameFlags, fragmentNumber, fragmentsPerFrame = struct.unpack("<HBBB", data[7:12])
+
+    if frameNumber != g_currentVideoFrameNumber:
+        g_lowPacketsAck = 0
+        g_currentVideoFrameNumber = frameNumber
+
+    assert fragmentsPerFrame < 64, fragmentsPerFrame # lazyness, to get started
+    highPacketsAck = 0
+    g_lowPacketsAck |= (1<<fragmentNumber)
+
+    payload = struct.pack("<HQQ", frameNumber, highPacketsAck, g_lowPacketsAck )
+    frameType = 2
+    frameId = 13
+    frameSeq = g_seqVideoAck
+    g_seqVideoAck += 1
     buf = struct.pack("<BBBI", frameType, frameId, frameSeq % 256, len(payload)+7)
     return buf + payload
 
