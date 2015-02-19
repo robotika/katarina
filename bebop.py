@@ -70,6 +70,13 @@ class Bebop:
         # ARCOMMANDS_ID_ARDRONE3_MEDIASTREAMING_CMD_VIDEOENABLE = 0,        
         self.update( cmd=struct.pack("BBHB", 1, 21, 0, 1) )
 
+    def moveCamera( self, tilt, pan ):
+        "Tilt/Pan camera consign for the drone (in degrees)"
+        # ARCOMMANDS_ID_PROJECT_ARDRONE3 = 1,
+        # ARCOMMANDS_ID_ARDRONE3_CLASS_CAMERA = 1,
+        # ARCOMMANDS_ID_ARDRONE3_CAMERA_CMD_ORIENTATION = 0,
+        self.update( cmd=struct.pack("BBHbb", 1, 1, 0, tilt, pan) )
+
     def resetHome( self ):
         # ARCOMMANDS_ID_PROJECT_ARDRONE3 = 1
         # ARCOMMANDS_ID_ARDRONE3_CLASS_GPSSETTINGS = 23
@@ -101,6 +108,7 @@ def test( task, metalog ):
     for i in xrange(100):
         print i,
         robot.update( cmd=None )
+        robot.moveCamera( tilt=0, pan=-i )
 
     if metalog is None:
         f.close()
