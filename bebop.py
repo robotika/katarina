@@ -80,6 +80,31 @@ class Bebop:
         return data
 
 
+    # TODO rename these functions to xxxCmd so they can be prepared and not immediately called
+    # maybe move it to separate file commands.py??
+    def takeoff( self ):
+        # ARCOMMANDS_ID_PROJECT_ARDRONE3 = 1,
+        # ARCOMMANDS_ID_ARDRONE3_CLASS_PILOTING = 0,
+        # ARCOMMANDS_ID_ARDRONE3_PILOTING_CMD_TAKEOFF = 1,
+        self.update( cmd=struct.pack("BBH", 1, 0, 1) )
+        
+    def land( self ):
+        # ARCOMMANDS_ID_PROJECT_ARDRONE3 = 1,
+        # ARCOMMANDS_ID_ARDRONE3_CLASS_PILOTING = 0,
+        # ARCOMMANDS_ID_ARDRONE3_PILOTING_CMD_LANDING = 3,
+        self.update( cmd=struct.pack("BBH", 1, 0, 3) )
+
+    def emergency( self ):
+        # ARCOMMANDS_ID_PROJECT_ARDRONE3 = 1,
+        # ARCOMMANDS_ID_ARDRONE3_CLASS_PILOTING = 0,
+        # ARCOMMANDS_ID_ARDRONE3_PILOTING_CMD_EMERGENCY = 4,
+        self.update( cmd=struct.pack("BBH", 1, 0, 4) )
+    
+    # TODO:
+    # ARCOMMANDS_ID_ARDRONE3_PILOTING_CMD_FLATTRIM = 0,
+    # ARCOMMANDS_ID_ARDRONE3_PILOTING_CMD_PCMD = 2,
+   
+
     def videoEnable( self ):
         "enable video stream?"
         # ARCOMMANDS_ID_PROJECT_ARDRONE3 = 1,
@@ -116,6 +141,16 @@ def testCamera( task, metalog ):
         robot.moveCamera( tilt=i, pan=i ) # up & right
 
 
+def testEmergency( task, metalog ):
+    "test of reported state change"
+    robot = Bebop( metalog=metalog )
+    robot.takeoff()
+    robot.emergency()
+    for i in xrange(10):
+        print i,
+        robot.update( cmd=None )
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print __doc__
@@ -125,7 +160,8 @@ if __name__ == "__main__":
         metalog = MetaLog( filename=sys.argv[2] )
     if len(sys.argv) > 3 and sys.argv[3] == 'F':
         disableAsserts()
-    testCamera( sys.argv[1], metalog=metalog )
+#    testCamera( sys.argv[1], metalog=metalog )
+    testEmergency( sys.argv[1], metalog=metalog )
 
 # vim: expandtab sw=4 ts=4 
 

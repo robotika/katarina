@@ -70,14 +70,11 @@ def parseData( data ):
         assert frameSize >= 12, frameSize
         assert frameId == 0x7D, hex(frameId)
         #printHex( data[:20] )
-        f = open("video.bin","ab")
-        f.write( data[12:frameSize] )
-        f.close()
         data = data[frameSize:]
         return data
 
     assert frameId in [0x7F, 0x0, 0x7E], frameId
-    assert frameSize in [12, 15, 19, 23, 35], frameSize
+    assert frameSize in [12, 13, 15, 19, 23, 35], frameSize
 
     if frameId == 0x7F:
         commandProject, commandClass, commandId = struct.unpack("BBH",  data[7:7+4])
@@ -94,6 +91,10 @@ def parseData( data ):
         elif (commandClass, commandId) == (4,8):
             altitude = struct.unpack("d", data[11:11+8])[0]
             print "Altitude", altitude
+        elif (commandClass, commandId) == (25,0):
+            tilt,pan = struct.unpack("BB", data[11:11+2])
+            print "CameraState Tilt/Pan", tilt, pan
+            printHex( data[:frameSize] )
         else:
             print "UNKNOWN",
             printHex( data[:frameSize] )
@@ -103,6 +104,44 @@ def parseData( data ):
         if (commandProject, commandClass, commandId) == (0,5,1):
             battery = struct.unpack("B", data[11:12])[0]
             print "Battery", battery
+        elif (commandProject, commandClass) == (0,14):
+            # ARCOMMANDS_ID_COMMON_CLASS_CALIBRATIONSTATE = 14,
+            if commandId == 0:
+                # ARCOMMANDS_ID_COMMON_CALIBRATIONSTATE_CMD_MAGNETOCALIBRATIONSTATECHANGED = 0,
+                x,y,z,failed = struct.unpack("BBBB", data[11:11+4])
+                print "Magnetometer calibration", (x,y,z), failed
+            elif commandId == 1:
+                # ARCOMMANDS_ID_COMMON_CALIBRATIONSTATE_CMD_MAGNETOCALIBRATIONREQUIREDSTATE
+                required = struct.unpack("B", data[11:11+1])[0]
+                print "Magnetometer calibration required", required
+            elif commandId == 3:
+                # ARCOMMANDS_ID_COMMON_CALIBRATIONSTATE_CMD_MAGNETOCALIBRATIONSTARTEDCHANGED
+                started = struct.unpack("B", data[11:11+1])[0]
+                print "Magnetometer calibration required", started
+            else:
+                print "Calibration", commandId,
+                printHex( data[:frameSize] )
+        elif (commandProject, commandClass) == (1,16):
+            # ARCOMMANDS_ID_ARDRONE3_CLASS_SETTINGSSTATE = 16,
+            if commandId == 4:
+                # ARCOMMANDS_ID_ARDRONE3_SETTINGSSTATE_CMD_MOTORFLIGHTSSTATUSCHANGED = 4,
+                nbFlights, lastFlightDuration, totalFlightDuration = struct.unpack("HHI", data[11:11+8])
+                print "Motor flights status", nbFlights, lastFlightDuration, totalFlightDuration
+            elif commandId == 5:
+                # ARCOMMANDS_ID_ARDRONE3_SETTINGSSTATE_CMD_MOTORERRORLASTERRORCHANGED = 5
+                lastError = struct.unpack("I", data[11:11+4])[0]
+                print "Motor last error", lastError
+            else:
+                print "Settings state", commandId,
+                printHex( data[:frameSize] )
+
+
+        elif (commandProject, commandClass, commandId) == (1,4,1):
+            # ARCOMMANDS_ID_ARDRONE3_CLASS_PILOTINGSTATE = 4,
+            # ARCOMMANDS_ID_ARDRONE3_PILOTINGSTATE_CMD_FLYINGSTATECHANGED = 1
+            state = struct.unpack("I", data[11:11+4])[0]
+            states = ["landed", "takingoff", "hovering", "flying", "landing", "emergency"]
+            print "Flying State", state, states[state]
         else:
             printHex( data[:frameSize] )
     elif frameId == 0x0: # ARNETWORK_MANAGER_INTERNAL_BUFFER_ID_PING
