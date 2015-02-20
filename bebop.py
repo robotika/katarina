@@ -25,6 +25,7 @@ COMMAND_PORT = 54321 # c2d_port
 class Bebop:
     def __init__( self, metalog=None ):
         if metalog is None:
+            self._discovery()
             metalog = MetaLog()
         self.navdata = metalog.createLoggedSocket( "navdata", headerFormat="<BBBI" )
         self.navdata.bind( ('',NAVDATA_PORT) )
@@ -32,6 +33,22 @@ class Bebop:
         self.metalog = metalog
         self.buf = ""
 
+    def _discovery( self ):
+        "start communication with the robot"
+        filename = "tmp.bin" # TODO combination outDir + date/time
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # TCP
+        s.connect( (HOST, DISCOVERY_PORT) )
+        s.send( '{"controller_type":"computer", "controller_name":"katarina", "d2c_port":"43210"}' )
+        f = open( filename, "wb" )
+        while True:
+            data = s.recv(10240)
+            if len(data) > 0:
+                print len(data)
+                f.write(data)
+                f.flush()
+                break
+        f.close()
+        s.close()
 
     def _update( self, cmd ):
         "internal send command and return navdata"
@@ -84,21 +101,9 @@ class Bebop:
         self.update( cmd=struct.pack("BBH", 1, 23, 1) )
 
 
-def test( task, metalog ):
-    if metalog is None:
-        filename = "tmp.bin" # TODO combination outDir + date/time
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # TCP
-        s.connect( (HOST, DISCOVERY_PORT) )
-        s.send( '{"controller_type":"computer", "controller_name":"katarina", "d2c_port":"43210"}' )
-        f = open( filename, "wb" )
-        while True:
-            data = s.recv(10240)
-            if len(data) > 0:
-                print len(data)
-                f.write(data)
-                f.flush()
-                break
+###############################################################################################
 
+def testCamera( task, metalog ):
     robot = Bebop( metalog=metalog )
     for i in xrange(10):
         print -i,
@@ -108,11 +113,7 @@ def test( task, metalog ):
     for i in xrange(100):
         print i,
         robot.update( cmd=None )
-        robot.moveCamera( tilt=0, pan=-i )
-
-    if metalog is None:
-        f.close()
-        s.close()
+        robot.moveCamera( tilt=i, pan=i ) # up & right
 
 
 if __name__ == "__main__":
@@ -124,7 +125,7 @@ if __name__ == "__main__":
         metalog = MetaLog( filename=sys.argv[2] )
     if len(sys.argv) > 3 and sys.argv[3] == 'F':
         disableAsserts()
-    test( sys.argv[1], metalog=metalog )
+    testCamera( sys.argv[1], metalog=metalog )
 
 # vim: expandtab sw=4 ts=4 
 
