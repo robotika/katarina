@@ -151,6 +151,19 @@ def testEmergency( task, metalog ):
         robot.update( cmd=None )
 
 
+def testTakeoff( task, metalog ):
+    robot = Bebop( metalog=metalog )
+    robot.videoEnable()
+    robot.takeoff()
+    for i in xrange(100):
+        print i,
+        robot.update( cmd=None )
+    robot.land()
+    for i in xrange(100):
+        print i,
+        robot.update( cmd=None )
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print __doc__
@@ -161,7 +174,8 @@ if __name__ == "__main__":
     if len(sys.argv) > 3 and sys.argv[3] == 'F':
         disableAsserts()
 #    testCamera( sys.argv[1], metalog=metalog )
-    testEmergency( sys.argv[1], metalog=metalog )
+#    testEmergency( sys.argv[1], metalog=metalog )
+    testTakeoff( sys.argv[1], metalog=metalog )
 
 # vim: expandtab sw=4 ts=4 
 

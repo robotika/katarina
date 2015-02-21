@@ -121,6 +121,29 @@ def parseData( data ):
             else:
                 print "Calibration", commandId,
                 printHex( data[:frameSize] )
+
+        elif (commandProject, commandClass) == (1,4):
+            # ARCOMMANDS_ID_ARDRONE3_CLASS_PILOTINGSTATE = 4,
+            if commandId == 1:
+                # ARCOMMANDS_ID_ARDRONE3_PILOTINGSTATE_CMD_FLYINGSTATECHANGED = 1
+                state = struct.unpack("I", data[11:11+4])[0]
+                states = ["landed", "takingoff", "hovering", "flying", "landing", "emergency"]
+                print "Flying State", state, states[state]
+            elif commandId == 2:
+                # ARCOMMANDS_ID_ARDRONE3_PILOTINGSTATE_CMD_ALERTSTATECHANGED
+                state = struct.unpack("I", data[11:11+4])[0]
+                states = ["none/No alert", "user/User emergency alert", "cut_out/Cut out alert", "critical_battery", "low_battery", "too_much_angle"]
+                print "ALERT State", state, states[state]
+            elif commandId == 3:
+                # ARCOMMANDS_ID_ARDRONE3_PILOTINGSTATE_CMD_NAVIGATEHOMESTATECHANGED
+                state, reason = struct.unpack("II", data[11:11+2*4])
+                states = ["available", "inProgress", "unavailable", "pending", "low_battery", "too_much_angle"]
+                reasons = ["userRequest", "connectionLost", "lowBattery", "finished", "stopped", "disabled", "enabled"]
+                print "NavigateHomeStateChanged", state, states[state], reasons[reason]
+            else:
+                print "Unknown Piloting State", commandId,
+                printHex( data[:frameSize] )
+
         elif (commandProject, commandClass) == (1,16):
             # ARCOMMANDS_ID_ARDRONE3_CLASS_SETTINGSSTATE = 16,
             if commandId == 4:
@@ -135,13 +158,13 @@ def parseData( data ):
                 print "Settings state", commandId,
                 printHex( data[:frameSize] )
 
-
-        elif (commandProject, commandClass, commandId) == (1,4,1):
-            # ARCOMMANDS_ID_ARDRONE3_CLASS_PILOTINGSTATE = 4,
-            # ARCOMMANDS_ID_ARDRONE3_PILOTINGSTATE_CMD_FLYINGSTATECHANGED = 1
+        elif (commandProject, commandClass, commandId) == (1,22,0):
+            # ARCOMMANDS_ID_ARDRONE3_CLASS_MEDIASTREAMINGSTATE = 22,
+            # ARCOMMANDS_ID_ARDRONE3_MEDIASTREAMINGSTATE_CMD_VIDEOENABLECHANGED = 0,
             state = struct.unpack("I", data[11:11+4])[0]
-            states = ["landed", "takingoff", "hovering", "flying", "landing", "emergency"]
-            print "Flying State", state, states[state]
+            states = ["enabled", "disabled", "error"]
+            print "Video Enabled State", state, states[state]
+
         else:
             printHex( data[:frameSize] )
     elif frameId == 0x0: # ARNETWORK_MANAGER_INTERNAL_BUFFER_ID_PING
