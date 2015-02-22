@@ -9,6 +9,7 @@ import socket
 import datetime
 import struct
 from navdata import *
+from commands import *
 
 # this will be in new separate repository as common library fo robotika Python-powered robots
 from apyros.metalog import MetaLog, disableAsserts
@@ -36,6 +37,7 @@ class Bebop:
         self.buf = ""
         self.battery = None
         self.flyingState = None
+        self.flatTrimCompleted = False
         self.manualControl = False
         
     def _discovery( self ):
@@ -93,34 +95,44 @@ class Bebop:
         return data
 
 
-    # TODO rename these functions to xxxCmd so they can be prepared and not immediately called
-    # maybe move it to separate file commands.py??
     def takeoff( self ):
-        # ARCOMMANDS_ID_PROJECT_ARDRONE3 = 1,
-        # ARCOMMANDS_ID_ARDRONE3_CLASS_PILOTING = 0,
-        # ARCOMMANDS_ID_ARDRONE3_PILOTING_CMD_TAKEOFF = 1,
-        self.update( cmd=struct.pack("BBH", 1, 0, 1) )
+        print "Taking off ...",
+        self.update( cmd=takeoffCmd() )
+        prevState = None
+        for i in xrange(100):
+            print i,
+            robot.update( cmd=None )
+            if self.flyingState != 1 and prevState == 1:
+                break
+            prevState = self.flyingState
+        print "FLYING"
         
     def land( self ):
-        # ARCOMMANDS_ID_PROJECT_ARDRONE3 = 1,
-        # ARCOMMANDS_ID_ARDRONE3_CLASS_PILOTING = 0,
-        # ARCOMMANDS_ID_ARDRONE3_PILOTING_CMD_LANDING = 3,
-        self.update( cmd=struct.pack("BBH", 1, 0, 3) )
+        print "Landing ...",
+        self.update( cmd=landCmd() )
+        for i in xrange(100):
+            print i,
+            robot.update( cmd=None )
+            if self.flyingState == 0: # landed
+                break
+        print "LANDED"
 
     def emergency( self ):
-        # ARCOMMANDS_ID_PROJECT_ARDRONE3 = 1,
-        # ARCOMMANDS_ID_ARDRONE3_CLASS_PILOTING = 0,
-        # ARCOMMANDS_ID_ARDRONE3_PILOTING_CMD_EMERGENCY = 4,
-        self.update( cmd=struct.pack("BBH", 1, 0, 4) )
+        self.update( cmd=emergencyCmd() )
 
     def trim( self ):
-        # ARCOMMANDS_ID_PROJECT_ARDRONE3 = 1,
-        # ARCOMMANDS_ID_ARDRONE3_CLASS_PILOTING = 0,
-        # ARCOMMANDS_ID_ARDRONE3_PILOTING_CMD_FLATTRIM = 0,
-        self.update( cmd=struct.pack("BBH", 1, 0, 0) )
-
-    # TODO:
-    # ARCOMMANDS_ID_ARDRONE3_PILOTING_CMD_PCMD = 2,
+        print "Trim:", 
+        self.flatTrimCompleted = False
+        for i in xrange(10):
+            print i,
+            robot.update( cmd=None )
+        print
+        self.update( cmd=trimCmd() )
+        for i in xrange(10):
+            print i,
+            robot.update( cmd=None )
+            if self.flatTrimCompleted:
+                break
    
 
     def videoEnable( self ):
@@ -183,33 +195,16 @@ def testTakeoff( robot ):
 def testManualControlException( robot ):
     robot.videoEnable()
     try:
-        for i in xrange(10):
-            print i,
-            robot.update( cmd=None )
         robot.trim()
-        for i in xrange(10):
-            print i,
-            robot.update( cmd=None )
         robot.takeoff()
-        for i in xrange(100):
-            print i,
-            robot.update( cmd=None )
         robot.land()
-        for i in xrange(100):
-            print i,
-            robot.update( cmd=None )
     except ManualControlException, e:
         print
         print "ManualControlException"
         if robot.flyingState is None or robot.flyingState == 1: # taking off
             # unfortunately it is not possible to land during takeoff for ARDrone3 :(
             robot.emergency()
-        else:
-            robot.land()
-    for i in xrange(100):
-        print i,
-        robot.update( cmd=None )
-    
+        robot.land()
 
 
 if __name__ == "__main__":

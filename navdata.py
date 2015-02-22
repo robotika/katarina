@@ -138,7 +138,11 @@ def parseData( data, robot, verbose=False ):
 
         elif (commandProject, commandClass) == (1,4):
             # ARCOMMANDS_ID_ARDRONE3_CLASS_PILOTINGSTATE = 4,
-            if commandId == 1:
+            if commandId == 0:
+                # ARCOMMANDS_ID_ARDRONE3_PILOTINGSTATE_CMD_FLATTRIMCHANGED = 0
+                print "FlatTrim changed"
+                robot.flatTrimCompleted = True
+            elif commandId == 1:
                 # ARCOMMANDS_ID_ARDRONE3_PILOTINGSTATE_CMD_FLYINGSTATECHANGED = 1
                 state = struct.unpack("I", data[11:11+4])[0]
                 states = ["landed", "takingoff", "hovering", "flying", "landing", "emergency"]
