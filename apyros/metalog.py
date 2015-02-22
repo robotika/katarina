@@ -14,6 +14,7 @@ import datetime
 import sys
 
 from logio import ReplayLog, LoggedSocket
+from sourcelogger import SourceLogger
 
 global g_checkAssert
 g_checkAssert = True # use command 'F' to disable it
@@ -57,6 +58,14 @@ class MetaLog:
             self.f.flush()
             return LoggedSocket( filename )
 
+    def createLoggedInput( self, prefix, function ):
+        if self.replay:
+            return SourceLogger( None, self.getLog( prefix ) )
+        else:
+            filename = "logs/" + prefix + datetime.datetime.now().strftime("_%y%m%d_%H%M%S.txt") # bin? txt? log??
+            self.f.write( prefix + ": " + filename + "\n")
+            self.f.flush()
+            return SourceLogger( function, filename )
 
 # vim: expandtab sw=4 ts=4 
 

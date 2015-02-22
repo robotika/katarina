@@ -75,7 +75,8 @@ def parseData( data, robot, verbose=False ):
         return data
 
     assert frameId in [0x7F, 0x0, 0x7E], frameId
-    assert frameSize in [12, 13, 15, 19, 23, 35], frameSize
+    if verbose:
+        assert frameSize in [12, 13, 15, 19, 23, 35], frameSize
 
     if frameId == 0x7F:
         commandProject, commandClass, commandId = struct.unpack("BBH",  data[7:7+4])

@@ -12,6 +12,7 @@ from navdata import *
 
 # this will be in new separate repository as common library fo robotika Python-powered robots
 from apyros.metalog import MetaLog, disableAsserts
+from apyros.manual import myKbhit, ManualControlException
 
 
 # hits from https://github.com/ARDroneSDK3/ARSDKBuildUtils/issues/5
@@ -30,11 +31,13 @@ class Bebop:
         self.navdata = metalog.createLoggedSocket( "navdata", headerFormat="<BBBI" )
         self.navdata.bind( ('',NAVDATA_PORT) )
         self.command = metalog.createLoggedSocket( "cmd", headerFormat="<BBBI" )
+        self.console = metalog.createLoggedInput( "console", myKbhit ).get
         self.metalog = metalog
         self.buf = ""
         self.battery = None
         self.flyingState = None
-
+        self.manualControl = False
+        
     def _discovery( self ):
         "start communication with the robot"
         filename = "tmp.bin" # TODO combination outDir + date/time
@@ -54,6 +57,13 @@ class Bebop:
 
     def _update( self, cmd ):
         "internal send command and return navdata"
+        
+        if not self.manualControl:
+            self.manualControl = self.console()
+            if self.manualControl:
+                # raise exception only once
+                raise ManualControlException()
+
         while len(self.buf) == 0:
             data = self.navdata.recv(4094)
             self.buf += data
@@ -102,9 +112,14 @@ class Bebop:
         # ARCOMMANDS_ID_ARDRONE3_CLASS_PILOTING = 0,
         # ARCOMMANDS_ID_ARDRONE3_PILOTING_CMD_EMERGENCY = 4,
         self.update( cmd=struct.pack("BBH", 1, 0, 4) )
-    
+
+    def trim( self ):
+        # ARCOMMANDS_ID_PROJECT_ARDRONE3 = 1,
+        # ARCOMMANDS_ID_ARDRONE3_CLASS_PILOTING = 0,
+        # ARCOMMANDS_ID_ARDRONE3_PILOTING_CMD_FLATTRIM = 0,
+        self.update( cmd=struct.pack("BBH", 1, 0, 0) )
+
     # TODO:
-    # ARCOMMANDS_ID_ARDRONE3_PILOTING_CMD_FLATTRIM = 0,
     # ARCOMMANDS_ID_ARDRONE3_PILOTING_CMD_PCMD = 2,
    
 
@@ -164,6 +179,39 @@ def testTakeoff( robot ):
         robot.update( cmd=None )
     print
 
+
+def testManualControlException( robot ):
+    robot.videoEnable()
+    try:
+        for i in xrange(10):
+            print i,
+            robot.update( cmd=None )
+        robot.trim()
+        for i in xrange(10):
+            print i,
+            robot.update( cmd=None )
+        robot.takeoff()
+        for i in xrange(100):
+            print i,
+            robot.update( cmd=None )
+        robot.land()
+        for i in xrange(100):
+            print i,
+            robot.update( cmd=None )
+    except ManualControlException, e:
+        print
+        print "ManualControlException"
+        if robot.flyingState is None or robot.flyingState == 1: # taking off
+            # unfortunately it is not possible to land during takeoff for ARDrone3 :(
+            robot.emergency()
+        else:
+            robot.land()
+    for i in xrange(100):
+        print i,
+        robot.update( cmd=None )
+    
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print __doc__
@@ -177,7 +225,8 @@ if __name__ == "__main__":
     robot = Bebop( metalog=metalog )
 #    testCamera( robot )
 #    testEmergency( robot )
-    testTakeoff( robot )
+#    testTakeoff( robot )
+    testManualControlException( robot )
     print "Battery:", robot.battery
 
 # vim: expandtab sw=4 ts=4 
