@@ -15,10 +15,13 @@ TMP_VIDEO_FILE = "video.bin"
 def playVideo( filename ):
     cap = cv2.VideoCapture( filename )
     ret, frame = cap.read()
-    #cv2.imwrite( "first-video.jpg", frame )
     while ret:
         cv2.imshow('image', frame)
-        cv2.waitKey(100)
+        key = cv2.waitKey(100)
+        if key == 27: # ESC
+            break
+        if key > 0 and chr(key) in ['s', 'S']:
+            cv2.imwrite( "frameX.jpg", frame )
         ret, frame = cap.read()
     cap.release()
     cv2.destroyAllWindows()
