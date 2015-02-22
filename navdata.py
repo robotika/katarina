@@ -47,7 +47,7 @@ def cutPacket( data ):
     return data[:frameSize], data[frameSize:]
 
 
-def parseData( data ):
+def parseData( data, robot, verbose=False ):
     # m:\git\ARDroneSDK3\libARNetworkAL\Includes\libARNetworkAL\ARNETWORKAL_Frame.h 
     #   uint8_t type; /**< frame type eARNETWORK_FRAME_TYPE */
     #   uint8_t id; /**< identifier of the buffer sending the frame */
@@ -62,7 +62,8 @@ def parseData( data ):
     if frameType == ARNETWORKAL_FRAME_TYPE_ACK:
         assert frameSize == 8, frameSize
         assert frameId == 0x8B, hex(frameId)
-        print "ACKACK", ord(data[frameSize-1])
+        if verbose:
+            print "ACKACK", ord(data[frameSize-1])
         data = data[frameSize:]
         return data
 
@@ -81,46 +82,58 @@ def parseData( data ):
         assert commandProject == 1, commandProject
         if (commandClass, commandId) == (4,4):
             lat, lon, alt = struct.unpack("ddd", data[11:11+3*8])
-            print "Position", lat, lon, alt
+            if verbose:
+                print "Position", lat, lon, alt
         elif (commandClass, commandId) == (4,5):
             speedX, speedY, speedZ = struct.unpack("fff", data[11:11+3*4])
-            print "Speed", speedX, speedY, speedZ
+            if verbose:
+                print "Speed", speedX, speedY, speedZ
         elif (commandClass, commandId) == (4,6):
             roll, pitch, yaw = struct.unpack("fff", data[11:11+3*4])
-            print "Angle", roll, pitch, yaw
+            if verbose:
+                print "Angle", roll, pitch, yaw
         elif (commandClass, commandId) == (4,8):
             altitude = struct.unpack("d", data[11:11+8])[0]
-            print "Altitude", altitude
+            if verbose:
+                print "Altitude", altitude
         elif (commandClass, commandId) == (25,0):
             tilt,pan = struct.unpack("BB", data[11:11+2])
-            print "CameraState Tilt/Pan", tilt, pan
-            printHex( data[:frameSize] )
+            if verbose:
+                print "CameraState Tilt/Pan", tilt, pan
+                printHex( data[:frameSize] )
         else:
-            print "UNKNOWN",
-            printHex( data[:frameSize] )
-            assert False
+            if verbose:
+                print "UNKNOWN",
+                printHex( data[:frameSize] )
+                assert False
     elif frameId == 0x7E:
         commandProject, commandClass, commandId = struct.unpack("BBH",  data[7:7+4])
         if (commandProject, commandClass, commandId) == (0,5,1):
             battery = struct.unpack("B", data[11:12])[0]
-            print "Battery", battery
+            robot.battery = battery
+            if verbose:
+                print "Battery", battery
         elif (commandProject, commandClass) == (0,14):
             # ARCOMMANDS_ID_COMMON_CLASS_CALIBRATIONSTATE = 14,
             if commandId == 0:
                 # ARCOMMANDS_ID_COMMON_CALIBRATIONSTATE_CMD_MAGNETOCALIBRATIONSTATECHANGED = 0,
                 x,y,z,failed = struct.unpack("BBBB", data[11:11+4])
-                print "Magnetometer calibration", (x,y,z), failed
+                if verbose:
+                    print "Magnetometer calibration", (x,y,z), failed
             elif commandId == 1:
                 # ARCOMMANDS_ID_COMMON_CALIBRATIONSTATE_CMD_MAGNETOCALIBRATIONREQUIREDSTATE
                 required = struct.unpack("B", data[11:11+1])[0]
-                print "Magnetometer calibration required", required
+                if verbose:
+                    print "Magnetometer calibration required", required
             elif commandId == 3:
                 # ARCOMMANDS_ID_COMMON_CALIBRATIONSTATE_CMD_MAGNETOCALIBRATIONSTARTEDCHANGED
                 started = struct.unpack("B", data[11:11+1])[0]
-                print "Magnetometer calibration required", started
+                if verbose:
+                    print "Magnetometer calibration required", started
             else:
-                print "Calibration", commandId,
-                printHex( data[:frameSize] )
+                if verbose:
+                    print "Calibration", commandId,
+                    printHex( data[:frameSize] )
 
         elif (commandProject, commandClass) == (1,4):
             # ARCOMMANDS_ID_ARDRONE3_CLASS_PILOTINGSTATE = 4,
@@ -128,6 +141,7 @@ def parseData( data ):
                 # ARCOMMANDS_ID_ARDRONE3_PILOTINGSTATE_CMD_FLYINGSTATECHANGED = 1
                 state = struct.unpack("I", data[11:11+4])[0]
                 states = ["landed", "takingoff", "hovering", "flying", "landing", "emergency"]
+                robot.flyingState = state
                 print "Flying State", state, states[state]
             elif commandId == 2:
                 # ARCOMMANDS_ID_ARDRONE3_PILOTINGSTATE_CMD_ALERTSTATECHANGED
@@ -149,21 +163,25 @@ def parseData( data ):
             if commandId == 4:
                 # ARCOMMANDS_ID_ARDRONE3_SETTINGSSTATE_CMD_MOTORFLIGHTSSTATUSCHANGED = 4,
                 nbFlights, lastFlightDuration, totalFlightDuration = struct.unpack("HHI", data[11:11+8])
-                print "Motor flights status", nbFlights, lastFlightDuration, totalFlightDuration
+                if verbose:
+                    print "Motor flights status", nbFlights, lastFlightDuration, totalFlightDuration
             elif commandId == 5:
                 # ARCOMMANDS_ID_ARDRONE3_SETTINGSSTATE_CMD_MOTORERRORLASTERRORCHANGED = 5
                 lastError = struct.unpack("I", data[11:11+4])[0]
-                print "Motor last error", lastError
+                if verbose:
+                    print "Motor last error", lastError
             else:
-                print "Settings state", commandId,
-                printHex( data[:frameSize] )
+                if verbose:
+                    print "Settings state", commandId,
+                    printHex( data[:frameSize] )
 
         elif (commandProject, commandClass, commandId) == (1,22,0):
             # ARCOMMANDS_ID_ARDRONE3_CLASS_MEDIASTREAMINGSTATE = 22,
             # ARCOMMANDS_ID_ARDRONE3_MEDIASTREAMINGSTATE_CMD_VIDEOENABLECHANGED = 0,
             state = struct.unpack("I", data[11:11+4])[0]
             states = ["enabled", "disabled", "error"]
-            print "Video Enabled State", state, states[state]
+            if verbose:
+                print "Video Enabled State", state, states[state]
 
         else:
             printHex( data[:frameSize] )
@@ -193,7 +211,7 @@ def createAckPacket( data ):
 #    payload = data[7:8] # strange
     payload = struct.pack("B", frameSeq)
 #    payload = struct.pack("B", 1)
-    print "ACK", repr(payload)
+#    print "ACK", repr(payload)
 
     frameType = ARNETWORKAL_FRAME_TYPE_ACK
     frameId = 0xFE # 0x7E + 0x80
@@ -258,13 +276,18 @@ def createVideoAckPacket( data ):
     return buf + payload
 
 
+
+class DummyRobot:
+    pass
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print __doc__
         sys.exit(2)
+    robot = DummyRobot()
     data = open(sys.argv[1], "rb").read()
     while data:
-        data = parseData( data )
+        data = parseData( data, robot, verbose=True )
 
 # vim: expandtab sw=4 ts=4 
 

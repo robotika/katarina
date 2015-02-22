@@ -32,6 +32,8 @@ class Bebop:
         self.command = metalog.createLoggedSocket( "cmd", headerFormat="<BBBI" )
         self.metalog = metalog
         self.buf = ""
+        self.battery = None
+        self.flyingState = None
 
     def _discovery( self ):
         "start communication with the robot"
@@ -69,6 +71,7 @@ class Bebop:
             data = self._update( packData(cmd) )
         while True:
             if ackRequired(data):
+                parseData( data, robot=self, verbose=False )
                 data = self._update( createAckPacket(data) )
             elif pongRequired(data):
                 data = self._update( createPongPacket(data) )
@@ -76,7 +79,7 @@ class Bebop:
                 data = self._update( createVideoAckPacket(data) )
             else:
                 break
-
+        parseData( data, robot=self, verbose=False )
         return data
 
 
@@ -128,8 +131,7 @@ class Bebop:
 
 ###############################################################################################
 
-def testCamera( task, metalog ):
-    robot = Bebop( metalog=metalog )
+def testCamera( robot ):
     for i in xrange(10):
         print -i,
         robot.update( cmd=None )
@@ -141,9 +143,8 @@ def testCamera( task, metalog ):
         robot.moveCamera( tilt=i, pan=i ) # up & right
 
 
-def testEmergency( task, metalog ):
+def testEmergency( robot ):
     "test of reported state change"
-    robot = Bebop( metalog=metalog )
     robot.takeoff()
     robot.emergency()
     for i in xrange(10):
@@ -151,8 +152,7 @@ def testEmergency( task, metalog ):
         robot.update( cmd=None )
 
 
-def testTakeoff( task, metalog ):
-    robot = Bebop( metalog=metalog )
+def testTakeoff( robot ):
     robot.videoEnable()
     robot.takeoff()
     for i in xrange(100):
@@ -162,7 +162,7 @@ def testTakeoff( task, metalog ):
     for i in xrange(100):
         print i,
         robot.update( cmd=None )
-
+    print
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
@@ -173,9 +173,12 @@ if __name__ == "__main__":
         metalog = MetaLog( filename=sys.argv[2] )
     if len(sys.argv) > 3 and sys.argv[3] == 'F':
         disableAsserts()
-#    testCamera( sys.argv[1], metalog=metalog )
-#    testEmergency( sys.argv[1], metalog=metalog )
-    testTakeoff( sys.argv[1], metalog=metalog )
+
+    robot = Bebop( metalog=metalog )
+#    testCamera( robot )
+#    testEmergency( robot )
+    testTakeoff( robot )
+    print "Battery:", robot.battery
 
 # vim: expandtab sw=4 ts=4 
 
