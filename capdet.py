@@ -10,19 +10,20 @@ import numpy as np
 
 imgResult = None
 imgR,imgG,imgR = None, None, None
+rad = 10
 
 def onmouse(event, x, y, flags, param):
     if event == cv2.EVENT_LBUTTONDOWN:
         col = img[y][x]
         print x,y, col
         imgResult[y][x]=255
-        maskB = imgB == col[0]
-        maskG = imgG == col[1]
-        maskR = imgR == col[2]
+        maskB = np.logical_and( imgB < col[0]+rad, imgB > col[0]-rad )
+        maskG = np.logical_and( imgG < col[1]+rad, imgG > col[1]-rad )
+        maskR = np.logical_and( imgR < col[2]+rad, imgR > col[2]-rad )
         mask = np.logical_and(maskR, maskG)
         mask = np.logical_and(mask, maskB)
         if col[1] > max(col[0],col[2]):
-            imgResult[mask] = (0,255,128) # green
+            imgResult[mask] = (0,255,0) # green
         else:
             imgResult[mask] = (0,128,255) # orange
         cv2.imshow('result', imgResult)
