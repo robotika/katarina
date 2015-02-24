@@ -40,6 +40,12 @@ class MetaLog:
 
 
     def getLog( self, prefix ):
+        if not self.replay:
+            filename = "logs/" + prefix + datetime.datetime.now().strftime("_%y%m%d_%H%M%S.log") # bin? txt? log??
+            self.f.write( prefix + ": " + filename + "\n")
+            self.f.flush()
+            return filename
+
         for line in self.f:
             print "LINE", line.strip()
             if line.startswith( prefix ):
