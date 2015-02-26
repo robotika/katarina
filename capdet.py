@@ -2,7 +2,7 @@
 """
   The Parrot two color cap detector
   usage:
-       ./capdet.py <input image>
+       ./capdet.py <input image> [<colors file>]
 """
 import sys
 import cv2
@@ -65,26 +65,13 @@ if __name__ == "__main__":
     img = cv2.imread( filename )
     imgResult = np.zeros( img.shape, np.uint8 )
     imgB, imgG, imgR = cv2.split(img)
-    colSamples = [
-[53, 73, 31],
-[62, 85, 41],
-[46, 75, 30],
-[55, 78, 34],
-[58, 88, 39],
-[55, 84, 38],
-[35, 54, 21],
-[ 37,  38, 128],
-[ 33,  30, 109],
-[ 34,  38, 127],
-[ 14,  33, 124],
-[ 42,  49, 122],
-[ 31,  42, 122],
-[ 28,  39, 119],
-[ 18,  17, 115],
-[ 39,  43, 132],]
-            
-    for col in colSamples:
-        addColor( col )
+     
+    if len(sys.argv) > 2:
+        for line in open(sys.argv[2]):
+            line = line.split('#')[0]
+            line = line.replace(',',' ').translate(None,"[]")
+            if len(line.split()) == 3:
+                addColor( [int(x) for x in line.split()] )
 
     detectTwoColors( img, None, None )
     cv2.setMouseCallback("image", onmouse)    
