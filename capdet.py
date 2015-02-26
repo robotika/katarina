@@ -12,20 +12,23 @@ imgResult = None
 imgR,imgG,imgR = None, None, None
 rad = 10
 
+def addColor( col ):
+    maskB = np.logical_and( imgB < col[0]+rad, imgB > col[0]-rad )
+    maskG = np.logical_and( imgG < col[1]+rad, imgG > col[1]-rad )
+    maskR = np.logical_and( imgR < col[2]+rad, imgR > col[2]-rad )
+    mask = np.logical_and(maskR, maskG)
+    mask = np.logical_and(mask, maskB)
+    if col[1] > max(col[0],col[2]):
+        imgResult[mask] = (0,255,0) # green
+    else:
+        imgResult[mask] = (0,128,255) # orange
+
 def onmouse(event, x, y, flags, param):
     if event == cv2.EVENT_LBUTTONDOWN:
         col = img[y][x]
         print x,y, col
         imgResult[y][x]=255
-        maskB = np.logical_and( imgB < col[0]+rad, imgB > col[0]-rad )
-        maskG = np.logical_and( imgG < col[1]+rad, imgG > col[1]-rad )
-        maskR = np.logical_and( imgR < col[2]+rad, imgR > col[2]-rad )
-        mask = np.logical_and(maskR, maskG)
-        mask = np.logical_and(mask, maskB)
-        if col[1] > max(col[0],col[2]):
-            imgResult[mask] = (0,255,0) # green
-        else:
-            imgResult[mask] = (0,128,255) # orange
+        addColor( col )
         cv2.imshow('result', imgResult)
 
 
@@ -33,6 +36,26 @@ def detectTwoColors( img, colorA, colorB ):
     cv2.imshow('image', img)
     img2 = cv2.cvtColor( img, cv2.COLOR_RGB2HSV )
     cv2.imshow('hsv', img2)
+
+    gray = cv2.cvtColor( imgResult, cv2.COLOR_BGR2GRAY )
+    ret, binary = cv2.threshold( gray, 1, 255, cv2.THRESH_BINARY )
+
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(7,7))
+    binary = cv2.dilate( binary, kernel )
+    
+    cmpRG = imgR > imgG
+    contours, hierarchy = cv2.findContours( binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE )
+    for cnt in contours:
+        area = cv2.contourArea(cnt, oriented=True)
+        if area < 0:
+            cv2.drawContours(imgResult, [cnt], -1, (255,0,0), 2)
+            maskTmp = np.zeros( (img.shape[0],img.shape[1]), np.uint8 )
+            cv2.drawContours(maskTmp, [cnt], -1, 255, -1)
+            mask = maskTmp > 0
+            orange = np.count_nonzero(np.logical_and( mask, cmpRG ))
+            print abs(area), orange, orange/float(abs(area))
+    cv2.imshow('result', imgResult)
+
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
@@ -42,6 +65,27 @@ if __name__ == "__main__":
     img = cv2.imread( filename )
     imgResult = np.zeros( img.shape, np.uint8 )
     imgB, imgG, imgR = cv2.split(img)
+    colSamples = [
+[53, 73, 31],
+[62, 85, 41],
+[46, 75, 30],
+[55, 78, 34],
+[58, 88, 39],
+[55, 84, 38],
+[35, 54, 21],
+[ 37,  38, 128],
+[ 33,  30, 109],
+[ 34,  38, 127],
+[ 14,  33, 124],
+[ 42,  49, 122],
+[ 31,  42, 122],
+[ 28,  39, 119],
+[ 18,  17, 115],
+[ 39,  43, 132],]
+            
+    for col in colSamples:
+        addColor( col )
+
     detectTwoColors( img, None, None )
     cv2.setMouseCallback("image", onmouse)    
     cv2.waitKey(0)
