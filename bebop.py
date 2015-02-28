@@ -121,6 +121,7 @@ class Bebop:
             if self.flyingState == 0: # landed
                 break
         print "LANDED"
+        self.update( videoRecording( on=False ) ) # autorecording does not stop it (???)
         for i in xrange(30):
             print i,
             self.update( cmd=None )
