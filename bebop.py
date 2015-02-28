@@ -39,6 +39,7 @@ class Bebop:
         self.flyingState = None
         self.flatTrimCompleted = False
         self.manualControl = False
+        self.config()
         
     def _discovery( self ):
         "start communication with the robot"
@@ -94,6 +95,10 @@ class Bebop:
         parseData( data, robot=self, verbose=False )
         return data
 
+    def config( self ):
+        # initial cfg
+        self.update( videoAutorecordingCmd( enabled=True ) )
+
 
     def takeoff( self ):
         print "Taking off ...",
@@ -101,7 +106,7 @@ class Bebop:
         prevState = None
         for i in xrange(100):
             print i,
-            robot.update( cmd=None )
+            self.update( cmd=None )
             if self.flyingState != 1 and prevState == 1:
                 break
             prevState = self.flyingState
@@ -112,10 +117,14 @@ class Bebop:
         self.update( cmd=landCmd() )
         for i in xrange(100):
             print i,
-            robot.update( cmd=None )
+            self.update( cmd=None )
             if self.flyingState == 0: # landed
                 break
         print "LANDED"
+        for i in xrange(30):
+            print i,
+            self.update( cmd=None )
+        print
 
     def emergency( self ):
         self.update( cmd=emergencyCmd() )
@@ -125,15 +134,17 @@ class Bebop:
         self.flatTrimCompleted = False
         for i in xrange(10):
             print i,
-            robot.update( cmd=None )
+            self.update( cmd=None )
         print
         self.update( cmd=trimCmd() )
         for i in xrange(10):
             print i,
-            robot.update( cmd=None )
+            self.update( cmd=None )
             if self.flatTrimCompleted:
                 break
    
+    def takePicture( self ):
+        self.update( cmd=takePictureCmd() )
 
     def videoEnable( self ):
         "enable video stream?"
@@ -207,6 +218,19 @@ def testManualControlException( robot ):
         robot.land()
 
 
+def testTakePicture( robot ):
+    print "TEST take picture"
+    robot.videoEnable()
+    for i in xrange(10):
+        print i,
+        robot.update( cmd=None )
+    robot.takePicture()
+    for i in xrange(10):
+        print i,
+        robot.update( cmd=None )
+
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print __doc__
@@ -222,6 +246,7 @@ if __name__ == "__main__":
 #    testEmergency( robot )
 #    testTakeoff( robot )
     testManualControlException( robot )
+#    testTakePicture( robot )
     print "Battery:", robot.battery
 
 # vim: expandtab sw=4 ts=4 

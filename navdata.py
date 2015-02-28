@@ -70,13 +70,17 @@ def parseData( data, robot, verbose=False ):
     if frameType == ARNETWORKAL_FRAME_TYPE_DATA_LOW_LATENCY: # 0x3
         assert frameSize >= 12, frameSize
         assert frameId == 0x7D, hex(frameId)
+        frameNumber, frameFlags, fragmentNumber, fragmentsPerFrame = struct.unpack("<HBBB", data[7:12])
+        print "Video", frameNumber, frameFlags, fragmentNumber, fragmentsPerFrame
         #printHex( data[:20] )
         data = data[frameSize:]
         return data
 
     assert frameId in [0x7F, 0x0, 0x7E], frameId
     if verbose:
-        assert frameSize in [12, 13, 15, 19, 23, 35], frameSize
+        assert frameSize in [11, 12, 13, 15, 16, 19, 23, 35], frameSize
+        if frameSize == 16:
+            printHex( data[:frameSize] )
 
     if frameId == 0x7F:
         commandProject, commandClass, commandId = struct.unpack("BBH",  data[7:7+4])
@@ -163,6 +167,21 @@ def parseData( data, robot, verbose=False ):
                 print "Unknown Piloting State", commandId,
                 printHex( data[:frameSize] )
 
+        elif (commandProject, commandClass, commandId) == (1,8,0):
+            # ARCOMMANDS_ID_ARDRONE3_CLASS_MEDIARECORDSTATE = 8,
+            # ARCOMMANDS_ID_ARDRONE3_MEDIARECORDSTATE_CMD_PICTURESTATECHANGED = 0,
+            if verbose:
+                state, massStorageId = struct.unpack("BB", data[11:11+2])
+                print "Picture State Changed:", state, massStorageId
+
+        elif (commandProject, commandClass, commandId) == (1,8,1):
+            # ARCOMMANDS_ID_ARDRONE3_CLASS_MEDIARECORDSTATE = 8,
+            # ARCOMMANDS_ID_ARDRONE3_MEDIARECORDSTATE_CMD_VIDEOSTATECHANGED = 1
+            if verbose:
+                state, massStorageId = struct.unpack("IB", data[11:11+4+1])
+                states = ["stopped", "started", "failed", "autostopped"]
+                print "Video State Changed:", states[state], massStorageId
+
         elif (commandProject, commandClass) == (1,16):
             # ARCOMMANDS_ID_ARDRONE3_CLASS_SETTINGSSTATE = 16,
             if commandId == 4:
@@ -180,6 +199,11 @@ def parseData( data, robot, verbose=False ):
                     print "Settings state", commandId,
                     printHex( data[:frameSize] )
 
+        elif (commandProject, commandClass, commandId) == (1,20,5):
+            # ARCOMMANDS_ID_ARDRONE3_CLASS_PICTURESETTINGSSTATE = 20,            
+            if verbose:
+                print "VIDEOAUTORECORDCHANGED", struct.unpack("BB", data[11:11+2])
+
         elif (commandProject, commandClass, commandId) == (1,22,0):
             # ARCOMMANDS_ID_ARDRONE3_CLASS_MEDIASTREAMINGSTATE = 22,
             # ARCOMMANDS_ID_ARDRONE3_MEDIASTREAMINGSTATE_CMD_VIDEOENABLECHANGED = 0,
@@ -188,7 +212,15 @@ def parseData( data, robot, verbose=False ):
             if verbose:
                 print "Video Enabled State", state, states[state]
 
+        elif (commandProject, commandClass, commandId) == (129,3,0):
+            if verbose:
+                print "GPSDebugState, numSat =", struct.unpack("B", data[11:11+1])[0]
+
+        elif commandProject == 129:
+            print "DEBUG",
+            printHex( data[:frameSize] )
         else:
+            print "Unknown ACK:",
             printHex( data[:frameSize] )
     elif frameId == 0x0: # ARNETWORK_MANAGER_INTERNAL_BUFFER_ID_PING
         assert frameSize == 15, len(data)
