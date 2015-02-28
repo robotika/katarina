@@ -212,6 +212,12 @@ def parseData( data, robot, verbose=False ):
             if verbose:
                 print "Video Enabled State", state, states[state]
 
+        elif (commandProject, commandClass, commandId) == (1,24,2):
+            # ARCOMMANDS_ID_ARDRONE3_CLASS_GPSSETTINGSSTATE = 24,
+            # ARCOMMANDS_ID_ARDRONE3_GPSSETTINGSSTATE_CMD_GPSFIXSTATECHANGED = 2,
+            if verbose:
+                print "GPSFixStateChanged - fixed:", struct.unpack("B", data[11:11+1])
+
         elif (commandProject, commandClass, commandId) == (129,3,0):
             if verbose:
                 print "GPSDebugState, numSat =", struct.unpack("B", data[11:11+1])[0]
