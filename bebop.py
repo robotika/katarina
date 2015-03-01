@@ -35,10 +35,13 @@ class Bebop:
         self.console = metalog.createLoggedInput( "console", myKbhit ).get
         self.metalog = metalog
         self.buf = ""
+        self.videoCbk = None
         self.battery = None
         self.flyingState = None
         self.flatTrimCompleted = False
         self.manualControl = False
+        self.time = None
+        self.altitude = None
         self.config()
         
     def _discovery( self ):
@@ -87,8 +90,11 @@ class Bebop:
                 parseData( data, robot=self, verbose=False )
                 data = self._update( createAckPacket(data) )
             elif pongRequired(data):
+                parseData( data, robot=self, verbose=False ) # update self.time
                 data = self._update( createPongPacket(data) )
             elif videoAckRequired(data):
+                if self.videoCbk:
+                    self.videoCbk( data )
                 data = self._update( createVideoAckPacket(data) )
             else:
                 break
@@ -168,6 +174,29 @@ class Bebop:
         self.update( cmd=struct.pack("BBH", 1, 23, 1) )
 
 
+    def wait( self, duration ):
+        print "Wait", duration
+        assert self.time is not None
+        startTime = self.time
+        while self.time-startTime < duration:
+            self.update()
+
+    def flyToAltitude( self, altitude, timeout=3.0 ):
+        print "Fly to altitude", altitude, "from", self.altitude
+        speed = 20 # 20%
+        assert self.time is not None
+        assert self.altitude is not None
+        startTime = self.time
+        if self.altitude > altitude:
+            while self.altitude > altitude and self.time-startTime < timeout:
+                self.update( movePCMDCmd( True, 0, 0, 0, -speed ) )
+        else:
+            while self.altitude < altitude and self.time-startTime < timeout:
+                self.update( movePCMDCmd( True, 0, 0, 0, speed ) )
+        self.update( movePCMDCmd( True, 0, 0, 0, 0 ) )
+
+
+
 ###############################################################################################
 
 def testCamera( robot ):
@@ -219,6 +248,24 @@ def testManualControlException( robot ):
         robot.land()
 
 
+def testFlying( robot ):
+    robot.videoEnable()
+    try:
+        robot.trim()
+        robot.takeoff()
+        robot.flyToAltitude( 2.0 )
+        robot.wait( 2.0 )
+        robot.flyToAltitude( 1.0 )
+        robot.land()
+    except ManualControlException, e:
+        print
+        print "ManualControlException"
+        if robot.flyingState is None or robot.flyingState == 1: # taking off
+            # unfortunately it is not possible to land during takeoff for ARDrone3 :(
+            robot.emergency()
+        robot.land()
+
+
 def testTakePicture( robot ):
     print "TEST take picture"
     robot.videoEnable()
@@ -230,6 +277,17 @@ def testTakePicture( robot ):
         print i,
         robot.update( cmd=None )
 
+
+def videoCallback( data ):
+    print "Video", len(data)
+
+def testVideoProcessing( robot ):
+    print "TEST video"
+    robot.videoCbk = videoCallback
+    robot.videoEnable()
+    for i in xrange(10):
+        print i,
+        robot.update( cmd=None )
 
 
 if __name__ == "__main__":
@@ -246,8 +304,10 @@ if __name__ == "__main__":
 #    testCamera( robot )
 #    testEmergency( robot )
 #    testTakeoff( robot )
-    testManualControlException( robot )
+#    testManualControlException( robot )
 #    testTakePicture( robot )
+    testFlying( robot )
+#    testVideoProcessing( robot )
     print "Battery:", robot.battery
 
 # vim: expandtab sw=4 ts=4 

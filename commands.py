@@ -28,8 +28,15 @@ def trimCmd():
     return struct.pack("BBH", 1, 0, 0)
 
 
-    # TODO:
+def movePCMDCmd( active, roll, pitch, yaw, gaz ):
+    # ARCOMMANDS_ID_PROJECT_ARDRONE3 = 1,
+    # ARCOMMANDS_ID_ARDRONE3_CLASS_PILOTING = 0,
     # ARCOMMANDS_ID_ARDRONE3_PILOTING_CMD_PCMD = 2,
+    psi = 0.0 # Magnetic north heading of the controlling device (deg) [-180;180]
+    flag = 0
+    if active:
+        flag = 1
+    return struct.pack("BBHBBBBBf", 1, 0, 2, flag, roll, pitch, yaw, gaz, psi )
 
 
 def videoAutorecordingCmd( enabled=True ):

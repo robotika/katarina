@@ -84,33 +84,43 @@ def parseData( data, robot, verbose=False ):
 
     if frameId == 0x7F:
         commandProject, commandClass, commandId = struct.unpack("BBH",  data[7:7+4])
-        assert commandProject == 1, commandProject
-        if (commandClass, commandId) == (4,4):
-            lat, lon, alt = struct.unpack("ddd", data[11:11+3*8])
-            if verbose:
-                print "Position", lat, lon, alt
-        elif (commandClass, commandId) == (4,5):
-            speedX, speedY, speedZ = struct.unpack("fff", data[11:11+3*4])
-            if verbose:
-                print "Speed", speedX, speedY, speedZ
-        elif (commandClass, commandId) == (4,6):
-            roll, pitch, yaw = struct.unpack("fff", data[11:11+3*4])
-            if verbose:
-                print "Angle", roll, pitch, yaw
-        elif (commandClass, commandId) == (4,8):
-            altitude = struct.unpack("d", data[11:11+8])[0]
-            if verbose:
-                print "Altitude", altitude
-        elif (commandClass, commandId) == (25,0):
-            tilt,pan = struct.unpack("BB", data[11:11+2])
-            if verbose:
-                print "CameraState Tilt/Pan", tilt, pan
-                printHex( data[:frameSize] )
+        if commandProject == 0:
+            if (commandClass, commandId) == (5,7):
+                # ARCOMMANDS_ID_PROJECT_COMMON = 0,
+                # ARCOMMANDS_ID_COMMON_CLASS_COMMONSTATE = 5,
+                # ARCOMMANDS_ID_COMMON_COMMONSTATE_CMD_WIFISIGNALCHANGED = 7,
+                rssi = struct.unpack("h", data[7:7+2])[0] # RSSI of the signal between controller and the product (in dbm)
+                print "Wifi", rssi
+            printHex( data[:frameSize] )
+        elif commandProject == 1:
+            if (commandClass, commandId) == (4,4):
+                lat, lon, alt = struct.unpack("ddd", data[11:11+3*8])
+                if verbose:
+                    print "Position", lat, lon, alt
+            elif (commandClass, commandId) == (4,5):
+                speedX, speedY, speedZ = struct.unpack("fff", data[11:11+3*4])
+                if verbose:
+                    print "Speed", speedX, speedY, speedZ
+            elif (commandClass, commandId) == (4,6):
+                roll, pitch, yaw = struct.unpack("fff", data[11:11+3*4])
+                if verbose:
+                    print "Angle", roll, pitch, yaw
+            elif (commandClass, commandId) == (4,8):
+                robot.altitude = struct.unpack("d", data[11:11+8])[0]            
+                if verbose:
+                    print "Altitude", robot.altitude
+            elif (commandClass, commandId) == (25,0):
+                tilt,pan = struct.unpack("BB", data[11:11+2])
+                if verbose:
+                    print "CameraState Tilt/Pan", tilt, pan
+                    printHex( data[:frameSize] )
+            else:
+                if verbose:
+                    print "UNKNOWN",
+                    printHex( data[:frameSize] )
+                    assert False
         else:
-            if verbose:
-                print "UNKNOWN",
-                printHex( data[:frameSize] )
-                assert False
+            print "UNKNOWN Project", commandProject
     elif frameId == 0x7E:
         commandProject, commandClass, commandId = struct.unpack("BBH",  data[7:7+4])
         if (commandProject, commandClass, commandId) == (0,5,1):
@@ -233,7 +243,9 @@ def parseData( data, robot, verbose=False ):
         seconds, nanoseconds = struct.unpack("<II", data[7:15])
         assert nanoseconds < 1000000000, nanoseconds
         timestamp = seconds + nanoseconds/1000000000.
-        print "Time" , timestamp
+        robot.time = timestamp
+        if verbose:
+            print "Time" , timestamp
     data = data[frameSize:]
     return data
 
