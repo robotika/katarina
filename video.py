@@ -9,35 +9,58 @@ import struct
 import os
 from navdata import cutPacket,videoAckRequired
 
+class VideoFrames:
+    def __init__( self ):
+        self.currentFrameNumber = None
+        self.parts = []
+        self.frames = []
+
+    def append( self, packet ):
+        "append video packet with piece of frame"
+        assert videoAckRequired( packet )
+        frameNumber, frameFlags, fragmentNumber, fragmentsPerFrame = struct.unpack("<HBBB", packet[7:12])
+        data = packet[12:]
+        if frameNumber != self.currentFrameNumber:
+            if self.currentFrameNumber is not None:
+                s = ""
+                for i,d in enumerate(self.parts):
+                    if d is None:
+                        print (self.currentFrameNumber, i, len(self.parts))
+                        continue
+                    s += d
+                self.frames.append( s )
+            print "processing", frameNumber
+            self.currentFrameNumber = frameNumber
+            self.parts = [None]*fragmentsPerFrame
+        if self.parts[ fragmentNumber ] is not None:
+            print "duplicity", (frameNumber, fragmentNumber)
+        self.parts[ fragmentNumber ] = data
+
+    def getFrame( self ):
+        if len(self.frames) == 0:
+            return None
+        frame = self.frames[0]
+        self.frames = self.frames[1:]
+        return frame
+
+
 
 def navdata2video( inputFile, outputFile, outDir = ".", dumpIndividualFrames=False, startIndex=0 ):
     data = open(inputFile, "rb").read()
-    arr = []
+    out = open(outputFile, "wb")
+    vf = VideoFrames()
     while len(data) > 0:
         packet, data = cutPacket( data )
         if videoAckRequired( packet ):
-            frameNumber, frameFlags, fragmentNumber = struct.unpack("<HBB", packet[7:11])
-            arr.append( (frameNumber, fragmentNumber, packet[12:]) )
-    vf = open(outputFile, "wb")
-    prev = None
-    frameIndex = startIndex
-    frame = ""
-    for a in sorted(arr):
-        if prev != a[:2]:
-            if prev is not None and prev[0] != a[0]:
-                # new frame
-                if dumpIndividualFrames:
-                    fout = open(outDir+os.sep+"frame%04d.bin" % frameIndex, "wb")
-                    fout.write(frame)
-                    fout.close()                    
-                frame = ""
-                frameIndex += 1
-            frame += a[2]
-            vf.write(a[2])
-        else:
-            print "duplicity", prev
-        prev = a[:2]
-    vf.close()
+            vf.append( packet )
+        frame = vf.getFrame()
+        if frame:
+            if dumpIndividualFrames:
+                fout = open(outDir+os.sep+"frame%04d.bin" % frameIndex, "wb")
+                fout.write(frame)
+                fout.close()                    
+            out.write(frame)
+    out.close()
 
 
 if __name__ == "__main__":
