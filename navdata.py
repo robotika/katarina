@@ -128,6 +128,10 @@ def parseData( data, robot, verbose=False ):
             robot.battery = battery
             if verbose:
                 print "Battery", battery
+        elif (commandProject, commandClass, commandId) == (0,5,4):
+            print "Date:", data[11:frameSize-1]
+        elif (commandProject, commandClass, commandId) == (0,5,5):
+            print "Time:", data[11:frameSize-1]
         elif (commandProject, commandClass) == (0,14):
             # ARCOMMANDS_ID_COMMON_CLASS_CALIBRATIONSTATE = 14,
             if commandId == 0:

@@ -73,5 +73,20 @@ class MetaLog:
             self.f.flush()
             return SourceLogger( function, filename )
 
+    def now( self ):
+        "get logged datetime"
+        if self. replay:
+            dt = None
+            for line in self.f:
+                print "LINE", line.strip()
+                if line.startswith( "now:" ):
+                    dt = eval(line[4:].strip())
+                    break
+        else:
+            dt = datetime.datetime.now() 
+            self.f.write( "now: " + repr(dt) + "\n")
+            self.f.flush()
+        return dt
+
 # vim: expandtab sw=4 ts=4 
 

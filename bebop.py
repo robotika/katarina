@@ -110,6 +110,9 @@ class Bebop:
 
     def config( self ):
         # initial cfg
+        dt = self.metalog.now()
+        self.update( cmd=setDateCmd( date=dt.date() ) )
+        self.update( cmd=setTimeCmd( time=dt.time() ) )
         self.update( videoAutorecordingCmd( enabled=True ) )
 
 
@@ -312,8 +315,8 @@ if __name__ == "__main__":
 #    testEmergency( robot )
 #    testTakeoff( robot )
 #    testManualControlException( robot )
-#    testTakePicture( robot )
-    testFlying( robot )
+    testTakePicture( robot )
+#    testFlying( robot )
 #    testVideoProcessing( robot )
     print "Battery:", robot.battery
 

@@ -69,5 +69,21 @@ def videoRecording( on=True ):
         return struct.pack("BBHBB", 1, 7, 1, 0, massStorageId)
 
 
+def setDateCmd( date ):
+    # ARCOMMANDS_ID_PROJECT_COMMON = 0,
+    # ARCOMMANDS_ID_COMMON_CLASS_COMMON = 4,
+    # ARCOMMANDS_ID_COMMON_COMMON_CMD_CURRENTDATE = 1,
+    # Date with ISO-8601 format
+    return struct.pack("BBH", 0, 4, 1) + date.isoformat() + '\0'
+
+def setTimeCmd( time ):    
+    # ARCOMMANDS_ID_PROJECT_COMMON = 0,
+    # ARCOMMANDS_ID_COMMON_CLASS_COMMON = 4,
+    # ARCOMMANDS_ID_COMMON_COMMON_CMD_CURRENTTIME = 2,
+    # Time with ISO-8601 format
+    # note, that "time.isoformat()" did not work '19:39:22.887000' milisec??
+    return struct.pack("BBH", 0, 4, 2) + time.strftime("T%H%M%S+0000") + '\0'
+
+
 # vim: expandtab sw=4 ts=4 
 
