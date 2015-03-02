@@ -79,6 +79,13 @@ class Bebop:
         data, self.buf = cutPacket( self.buf )
         return data
 
+    def _parseData( self, data ):
+        try:
+            parseData( data, robot=self, verbose=False )
+        except AssertionError, e:
+            print "AssertionError", e
+
+
     def update( self, cmd ):
         "send command and return navdata"
         if cmd is None:
@@ -87,10 +94,10 @@ class Bebop:
             data = self._update( packData(cmd) )
         while True:
             if ackRequired(data):
-                parseData( data, robot=self, verbose=False )
+                self._parseData( data )
                 data = self._update( createAckPacket(data) )
             elif pongRequired(data):
-                parseData( data, robot=self, verbose=False ) # update self.time
+                self._parseData( data ) # update self.time
                 data = self._update( createPongPacket(data) )
             elif videoAckRequired(data):
                 if self.videoCbk:
@@ -98,7 +105,7 @@ class Bebop:
                 data = self._update( createVideoAckPacket(data) )
             else:
                 break
-        parseData( data, robot=self, verbose=False )
+        self._parseData( data )
         return data
 
     def config( self ):
