@@ -10,9 +10,11 @@ import os
 from navdata import cutPacket,videoAckRequired
 
 class VideoFrames:
-    def __init__( self ):
+    def __init__( self, onlyIFrames=False, verbose=True ):
+        self.onlyIFrames = onlyIFrames
+        self.verbose = verbose
         self.currentFrameNumber = None
-        self.parts = []
+        self.parts = None
         self.frames = []
 
     def append( self, packet ):
@@ -21,20 +23,27 @@ class VideoFrames:
         frameNumber, frameFlags, fragmentNumber, fragmentsPerFrame = struct.unpack("<HBBB", packet[7:12])
         data = packet[12:]
         if frameNumber != self.currentFrameNumber:
-            if self.currentFrameNumber is not None:
+            if self.currentFrameNumber is not None and self.parts is not None:
                 s = ""
                 for i,d in enumerate(self.parts):
                     if d is None:
-                        print (self.currentFrameNumber, i, len(self.parts))
+                        if self.verbose:
+                            print (self.currentFrameNumber, i, len(self.parts))
                         continue
                     s += d
                 self.frames.append( s )
-            print "processing", frameNumber
+            if self.verbose:
+                print "processing", frameNumber
             self.currentFrameNumber = frameNumber
-            self.parts = [None]*fragmentsPerFrame
-        if self.parts[ fragmentNumber ] is not None:
-            print "duplicity", (frameNumber, fragmentNumber)
-        self.parts[ fragmentNumber ] = data
+            if self.onlyIFrames and frameFlags != 1:
+                self.parts = None
+            else:
+                self.parts = [None]*fragmentsPerFrame
+        if not self.onlyIFrames or frameFlags == 1:
+            if self.parts[ fragmentNumber ] is not None:
+                if self.verbose:
+                    print "duplicity", (frameNumber, fragmentNumber)
+            self.parts[ fragmentNumber ] = data
 
     def getFrame( self ):
         if len(self.frames) == 0:

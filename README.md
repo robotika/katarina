@@ -71,4 +71,5 @@ ARDrone2. You can use this script also for detail verbose dump of recorded
 * apyros folder --- logging tools, shared among several Python driven robots.
   This folder is planned be moved into separate repository.
 
-
+* demo.py --- integration of image processing with flight control (work in
+  progress)

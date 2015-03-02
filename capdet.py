@@ -32,6 +32,7 @@ def detectTwoColors( img, capColors ):
     
     cmpRG = imgR > imgG
     contours, hierarchy = cv2.findContours( binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE )
+    result = []
     for cnt in contours:
         area = cv2.contourArea(cnt, oriented=True)
         if area < 0:
@@ -41,7 +42,14 @@ def detectTwoColors( img, capColors ):
             mask = maskTmp > 0
             orange = np.count_nonzero(np.logical_and( mask, cmpRG ))
             # print abs(area), orange, orange/float(abs(area))
-    return imgResult
+            frac = orange/float(abs(area))
+            if abs(area) > 20 and (0.4 < frac < 0.7):
+                M = cv2.moments(cnt)
+                cx = int(M['m10']/M['m00'])
+                cy = int(M['m01']/M['m00'])
+                result.append( ((cx,cy), abs(area), frac) )
+
+    return imgResult, result
 
 
 def onmouse(event, x, y, flags, param):
@@ -49,21 +57,23 @@ def onmouse(event, x, y, flags, param):
         col = img[y][x]
         print col
         capColors.append( col )        
-        cv2.imshow('result', detectTwoColors(img, capColors))
+        cv2.imshow('result', detectTwoColors(img, capColors)[0])
 
+def loadColors( filename ):
+    capColors = []
+    for line in open( filename ):
+        line = line.split('#')[0]
+        line = line.replace(',',' ').translate(None,"[]")
+        if len(line.split()) == 3:
+            capColors.append( [int(x) for x in line.split()] )
+    return capColors
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print __doc__
         sys.exit(2)
      
-    capColors = []
-    for line in open(sys.argv[1]):
-        line = line.split('#')[0]
-        line = line.replace(',',' ').translate(None,"[]")
-        if len(line.split()) == 3:
-            capColors.append( [int(x) for x in line.split()] )
-
+    capColors = loadColors( sys.argv[1] )
     filename = sys.argv[2]
 
     # convert navdata to video if necessary
@@ -82,7 +92,7 @@ if __name__ == "__main__":
         pause = 0
     while ret:
         cv2.imshow('image', img)    
-        cv2.imshow('result', detectTwoColors( img, capColors ))
+        cv2.imshow('result', detectTwoColors( img, capColors )[0])
         c = cv2.waitKey( pause )
         if c == 27: # ESC
             break
