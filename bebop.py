@@ -115,6 +115,7 @@ class Bebop:
         if dt: # for compatibility with older log files
             self.update( cmd=setDateCmd( date=dt.date() ) )
             self.update( cmd=setTimeCmd( time=dt.time() ) )
+        self.moveCamera( tilt=self.cameraTilt, pan=self.cameraPan )
         self.update( videoAutorecordingCmd( enabled=True ) )
 
 
