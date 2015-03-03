@@ -36,7 +36,7 @@ def movePCMDCmd( active, roll, pitch, yaw, gaz ):
     flag = 0
     if active:
         flag = 1
-    return struct.pack("BBHBBBBBf", 1, 0, 2, flag, roll, pitch, yaw, gaz, psi )
+    return struct.pack("BBHBbbbbf", 1, 0, 2, flag, roll, pitch, yaw, gaz, psi )
 
 
 def videoAutorecordingCmd( enabled=True ):

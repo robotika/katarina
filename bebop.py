@@ -87,7 +87,7 @@ class Bebop:
             print "AssertionError", e
 
 
-    def update( self, cmd ):
+    def update( self, cmd=None ):
         "send command and return navdata"
         if cmd is None:
             data = self._update( None )
