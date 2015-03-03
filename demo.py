@@ -20,7 +20,7 @@ TMP_VIDEO_FILE = "video.bin"
 
 g_vf = None
 
-def videoCallback( data ):
+def videoCallback( data, robot=None ):
     global g_vf
     g_vf.append( data )
     frame = g_vf.getFrame()
@@ -34,10 +34,23 @@ def videoCallback( data ):
         ret, img = cap.read()
         cap.release()
         if ret:
-            img, detected = detectTwoColors( img, loadColors("cap-colors.txt") )
+            detImg, detected = detectTwoColors( img, loadColors("cap-colors.txt") )
             print "Detected", detected
-#            cv2.imshow('image', img)
-#            key = cv2.waitKey(10)
+            if len(detected) > 0:
+                target = detected[0]
+                for alt in detected[1:]:
+                    if alt[1] > target[1]: # area
+                        target = alt
+                print "Target", target, img.shape
+                cv2.circle( img, target[0], 20, (255,0,0), 3)
+                if robot:
+                    diff = target[0][0] - 320
+                    if diff < 0:
+                        robot.moveCamera( robot.cameraTilt, robot.cameraPan - 1 )
+                    elif diff > 0:
+                        robot.moveCamera( robot.cameraTilt, robot.cameraPan + 1 )
+            cv2.imshow('image', img)
+            key = cv2.waitKey(10)
     
 
 
@@ -47,7 +60,7 @@ def demo( drone ):
     g_vf = VideoFrames( onlyIFrames=True, verbose=False )
     drone.videoCbk = videoCallback
     drone.videoEnable()
-    for i in xrange(100):
+    for i in xrange(1000):
         print i,
         drone.update( cmd=None )
 

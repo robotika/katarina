@@ -42,6 +42,7 @@ class Bebop:
         self.manualControl = False
         self.time = None
         self.altitude = None
+        self.cameraTilt, self.cameraPan = 0,0
         self.config()
         
     def _discovery( self ):
@@ -101,7 +102,7 @@ class Bebop:
                 data = self._update( createPongPacket(data) )
             elif videoAckRequired(data):
                 if self.videoCbk:
-                    self.videoCbk( data )
+                    self.videoCbk( data, robot=self )
                 data = self._update( createVideoAckPacket(data) )
             else:
                 break
@@ -111,8 +112,9 @@ class Bebop:
     def config( self ):
         # initial cfg
         dt = self.metalog.now()
-        self.update( cmd=setDateCmd( date=dt.date() ) )
-        self.update( cmd=setTimeCmd( time=dt.time() ) )
+        if dt: # for compatibility with older log files
+            self.update( cmd=setDateCmd( date=dt.date() ) )
+            self.update( cmd=setTimeCmd( time=dt.time() ) )
         self.update( videoAutorecordingCmd( enabled=True ) )
 
 
@@ -176,6 +178,7 @@ class Bebop:
         # ARCOMMANDS_ID_ARDRONE3_CLASS_CAMERA = 1,
         # ARCOMMANDS_ID_ARDRONE3_CAMERA_CMD_ORIENTATION = 0,
         self.update( cmd=struct.pack("BBHbb", 1, 1, 0, tilt, pan) )
+        self.cameraTilt, self.cameraPan = tilt, pan # maybe move this to parse data, drone should confirm that
 
     def resetHome( self ):
         # ARCOMMANDS_ID_PROJECT_ARDRONE3 = 1

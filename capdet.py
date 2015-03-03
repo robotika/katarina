@@ -47,7 +47,7 @@ def detectTwoColors( img, capColors ):
                 M = cv2.moments(cnt)
                 cx = int(M['m10']/M['m00'])
                 cy = int(M['m01']/M['m00'])
-                result.append( ((cx,cy), abs(area), frac) )
+                result.append( ((cx,cy), int(abs(area)), int(orange)) )
 
     return imgResult, result
 
