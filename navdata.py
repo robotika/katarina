@@ -87,7 +87,8 @@ def parseData( data, robot, verbose=False ):
                 # ARCOMMANDS_ID_COMMON_COMMONSTATE_CMD_WIFISIGNALCHANGED = 7,
                 rssi = struct.unpack("h", data[7:7+2])[0] # RSSI of the signal between controller and the product (in dbm)
                 print "Wifi", rssi
-            printHex( data[:frameSize] )
+            else:
+                printHex( data[:frameSize] )
         elif commandProject == 1:
             if (commandClass, commandId) == (4,4):
                 lat, lon, alt = struct.unpack("ddd", data[11:11+3*8])
@@ -109,7 +110,6 @@ def parseData( data, robot, verbose=False ):
                 tilt,pan = struct.unpack("BB", data[11:11+2])
                 if verbose:
                     print "CameraState Tilt/Pan", tilt, pan
-                    printHex( data[:frameSize] )
             else:
                 if verbose:
                     print "UNKNOWN",
