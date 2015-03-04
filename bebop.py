@@ -280,6 +280,26 @@ def testFlying( robot ):
         robot.land()
 
 
+def testFlyForward( robot ):
+    robot.videoEnable()
+    try:
+        speed = 20
+        robot.trim()
+        robot.takeoff()
+        for i in xrange(1000):
+            robot.update( cmd=movePCMDCmd( True, 0, speed, 0, 0 ) )
+            print robot.altitude
+        robot.update( cmd=movePCMDCmd( True, 0, 0, 0, 0 ) )
+        robot.land()
+    except ManualControlException, e:
+        print
+        print "ManualControlException"
+        if robot.flyingState is None or robot.flyingState == 1: # taking off
+            # unfortunately it is not possible to land during takeoff for ARDrone3 :(
+            robot.emergency()
+        robot.land()
+
+
 def testTakePicture( robot ):
     print "TEST take picture"
     robot.videoEnable()
@@ -319,8 +339,9 @@ if __name__ == "__main__":
 #    testEmergency( robot )
 #    testTakeoff( robot )
 #    testManualControlException( robot )
-    testTakePicture( robot )
+#    testTakePicture( robot )
 #    testFlying( robot )
+    testFlyForward( robot )
 #    testVideoProcessing( robot )
     print "Battery:", robot.battery
 
