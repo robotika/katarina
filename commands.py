@@ -58,15 +58,15 @@ def takePictureCmd():
     return struct.pack("BBHB", 1, 7, 0, massStorageId)
 
 
-def videoRecording( on=True ):
+def videoRecordingCmd( on=True ):
     # ARCOMMANDS_ID_PROJECT_ARDRONE3 = 1,
     # ARCOMMANDS_ID_ARDRONE3_CLASS_MEDIARECORD = 7,
     # ARCOMMANDS_ID_ARDRONE3_MEDIARECORD_CMD_VIDEO = 1
     massStorageId = 0 # internal ??
     if on:
-        return struct.pack("BBHBB", 1, 7, 1, 1, massStorageId)
+        return struct.pack("BBHIB", 1, 7, 1, 1, massStorageId)
     else:
-        return struct.pack("BBHBB", 1, 7, 1, 0, massStorageId)
+        return struct.pack("BBHIB", 1, 7, 1, 0, massStorageId)
 
 
 def setDateCmd( date ):

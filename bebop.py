@@ -116,10 +116,15 @@ class Bebop:
             self.update( cmd=setDateCmd( date=dt.date() ) )
             self.update( cmd=setTimeCmd( time=dt.time() ) )
         self.moveCamera( tilt=self.cameraTilt, pan=self.cameraPan )
-        self.update( videoAutorecordingCmd( enabled=True ) )
+        self.update( videoAutorecordingCmd( enabled=False ) )
 
 
     def takeoff( self ):
+        self.update( videoRecordingCmd( on=True ) )
+        for i in xrange(10):
+            print i,
+            self.update( cmd=None )
+        print
         print "Taking off ...",
         self.update( cmd=takeoffCmd() )
         prevState = None
@@ -140,7 +145,7 @@ class Bebop:
             if self.flyingState == 0: # landed
                 break
         print "LANDED"
-        self.update( videoRecording( on=False ) ) # autorecording does not stop it (???)
+        self.update( videoRecordingCmd( on=False ) )
         for i in xrange(30):
             print i,
             self.update( cmd=None )
@@ -323,6 +328,19 @@ def testVideoProcessing( robot ):
         print i,
         robot.update( cmd=None )
 
+def testVideoRecording( robot ):
+    robot.videoEnable()
+    for i in xrange(100):
+        print i,
+        robot.update( cmd=None )
+        if robot.time is not None:
+            break
+    print "START"
+    robot.update( cmd=videoRecordingCmd( on=True ) )
+    robot.wait( 10.0 )
+    print "STOP"
+    robot.update( cmd=videoRecordingCmd( on=False ) )
+    robot.wait( 2.0 )
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
@@ -341,8 +359,9 @@ if __name__ == "__main__":
 #    testManualControlException( robot )
 #    testTakePicture( robot )
 #    testFlying( robot )
-    testFlyForward( robot )
+#    testFlyForward( robot )
 #    testVideoProcessing( robot )
+    testVideoRecording( robot )
     print "Battery:", robot.battery
 
 # vim: expandtab sw=4 ts=4 
