@@ -307,22 +307,26 @@ def videoAckRequired( data ):
 
 g_currentVideoFrameNumber = None
 g_lowPacketsAck = 0
+g_highPacketsAck = 0
 
 def createVideoAckPacket( data ):
-    global g_currentVideoFrameNumber, g_lowPacketsAck, g_seqVideoAck
+    global g_currentVideoFrameNumber, g_lowPacketsAck, g_highPacketsAck, g_seqVideoAck
 
     assert len(data) >= 12, len(data)
     frameNumber, frameFlags, fragmentNumber, fragmentsPerFrame = struct.unpack("<HBBB", data[7:12])
 
     if frameNumber != g_currentVideoFrameNumber:
         g_lowPacketsAck = 0
+        g_highPacketsAck = 0
         g_currentVideoFrameNumber = frameNumber
 
-    assert fragmentsPerFrame < 64, fragmentsPerFrame # lazyness, to get started
-    highPacketsAck = 0
-    g_lowPacketsAck |= (1<<fragmentNumber)
+    if fragmentNumber < 64:
+        g_lowPacketsAck |= (1<<fragmentNumber)
+    else:
+        g_highPacketsAck |= (1<<(fragmentNumber-64))
+    
 
-    payload = struct.pack("<HQQ", frameNumber, highPacketsAck, g_lowPacketsAck )
+    payload = struct.pack("<HQQ", frameNumber, g_highPacketsAck, g_lowPacketsAck )
     frameType = 2
     frameId = 13
     frameSeq = g_seqVideoAck
