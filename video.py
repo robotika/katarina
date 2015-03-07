@@ -58,6 +58,7 @@ def navdata2video( inputFile, outputFile, outDir = ".", dumpIndividualFrames=Fal
     data = open(inputFile, "rb").read()
     out = open(outputFile, "wb")
     vf = VideoFrames()
+    frameIndex = startIndex
     while len(data) > 0:
         packet, data = cutPacket( data )
         if videoAckRequired( packet ):
@@ -68,6 +69,7 @@ def navdata2video( inputFile, outputFile, outDir = ".", dumpIndividualFrames=Fal
                 fout = open(outDir+os.sep+"frame%04d.bin" % frameIndex, "wb")
                 fout.write(frame)
                 fout.close()                    
+                frameIndex += 1
             out.write(frame)
     out.close()
 
