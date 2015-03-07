@@ -102,7 +102,7 @@ class Bebop:
                 data = self._update( createPongPacket(data) )
             elif videoAckRequired(data):
                 if self.videoCbk:
-                    self.videoCbk( data, robot=self )
+                    self.videoCbk( data, robot=self, debug=self.metalog.replay )
                 data = self._update( createVideoAckPacket(data) )
             else:
                 break

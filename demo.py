@@ -8,6 +8,7 @@ import sys
 import cv2
 
 from bebop import Bebop
+from commands import movePCMDCmd
 from video import VideoFrames
 from capdet import detectTwoColors, loadColors
 
@@ -20,7 +21,7 @@ TMP_VIDEO_FILE = "video.bin"
 
 g_vf = None
 
-def videoCallback( data, robot=None ):
+def videoCallback( data, robot=None, debug=False ):
     global g_vf
     g_vf.append( data )
     frame = g_vf.getFrame()
@@ -46,15 +47,18 @@ def videoCallback( data, robot=None ):
                 if robot:
                     diff = target[0][0] - 320
                     if diff < 0:
-                        robot.moveCamera( robot.cameraTilt, robot.cameraPan - 1 )
+#                        robot.moveCamera( robot.cameraTilt, robot.cameraPan - 1 )
+                        robot.update( movePCMDCmd(active=True, roll=0, pitch=0, yaw=-10, gaz=0) )
                     elif diff > 0:
-                        robot.moveCamera( robot.cameraTilt, robot.cameraPan + 1 )
-            cv2.imshow('image', img)
-            key = cv2.waitKey(10)
+#                        robot.moveCamera( robot.cameraTilt, robot.cameraPan + 1 )
+                        robot.update( movePCMDCmd(active=True, roll=0, pitch=0, yaw=+10, gaz=0) )
+            if debug:
+                cv2.imshow('image', img)
+                key = cv2.waitKey(200)
     
 
 
-def demo( drone ):
+def demo0( drone ):
     print "Follow 2-color cap ..."
     global g_vf
     g_vf = VideoFrames( onlyIFrames=True, verbose=False )
@@ -63,6 +67,28 @@ def demo( drone ):
     for i in xrange(1000):
         print i,
         drone.update( cmd=None )
+
+
+def demo( drone ):
+    print "Follow 2-color cap ..."
+    global g_vf
+    g_vf = VideoFrames( onlyIFrames=True, verbose=False )
+    drone.videoCbk = videoCallback
+    drone.videoEnable()
+    try:
+        drone.trim()
+        drone.takeoff()
+        for i in xrange(1000):
+            print i,
+            drone.update( cmd=None )
+        drone.land()
+    except ManualControlException, e:
+        print
+        print "ManualControlException"
+        if drone.flyingState is None or drone.flyingState == 1: # taking off
+            drone.emergency()
+        drone.land()
+
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
