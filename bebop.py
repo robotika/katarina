@@ -115,6 +115,9 @@ class Bebop:
         if dt: # for compatibility with older log files
             self.update( cmd=setDateCmd( date=dt.date() ) )
             self.update( cmd=setTimeCmd( time=dt.time() ) )
+        for cmd in setSpeedSettingsCmdList( maxVerticalSpeed=1.0, maxRotationSpeed=90.0, 
+                hullProtection=True, outdoor=True ):
+            self.update( cmd=cmd )
         self.moveCamera( tilt=self.cameraTilt, pan=self.cameraPan )
         self.update( videoAutorecordingCmd( enabled=False ) )
 

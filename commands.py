@@ -85,5 +85,14 @@ def setTimeCmd( time ):
     return struct.pack("BBH", 0, 4, 2) + time.strftime("T%H%M%S+0000") + '\0'
 
 
+def setSpeedSettingsCmdList( maxVerticalSpeed, maxRotationSpeed, hullProtection, outdoor ):
+    # ARCOMMANDS_ID_PROJECT_ARDRONE3 = 1,
+    # ARCOMMANDS_ID_ARDRONE3_CLASS_SPEEDSETTINGS = 11,
+    # ARCOMMANDS_ID_ARDRONE3_SPEEDSETTINGS_CMD_MAXVERTICALSPEED = 0,
+    return [ struct.pack("BBHf", 1, 11, 0, maxVerticalSpeed), # Current max vertical speed in m/s
+            struct.pack("BBHf", 1, 11, 1, maxRotationSpeed), # Current max rotation speed in degree/s
+            struct.pack("BBHB", 1, 11, 2, hullProtection),
+            struct.pack("BBHB", 1, 11, 3, outdoor) ]
+
 # vim: expandtab sw=4 ts=4 
 

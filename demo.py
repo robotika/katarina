@@ -78,6 +78,7 @@ def demo( drone ):
     try:
         drone.trim()
         drone.takeoff()
+        drone.flyToAltitude( 1.5 )
         for i in xrange(1000):
             print i,
             drone.update( cmd=None )
