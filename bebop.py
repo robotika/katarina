@@ -42,6 +42,9 @@ class Bebop:
         self.manualControl = False
         self.time = None
         self.altitude = None
+        self.position = (0,0,0)
+        self.speed = (0,0,0)
+        self.positionGPS = None
         self.cameraTilt, self.cameraPan = 0,0
         self.config()
         

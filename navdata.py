@@ -15,6 +15,8 @@ ARNETWORKAL_FRAME_TYPE_DATA_WITH_ACK = 0x4
 ARNETWORK_MANAGER_INTERNAL_BUFFER_ID_PING = 0
 ARNETWORK_MANAGER_INTERNAL_BUFFER_ID_PONG = 1
 
+POSITION_TIME_DELTA = 0.2 # estimated to 5Hz
+
 g_seq = 1
 g_seqAck = 1
 g_seqPongAck = 1
@@ -92,10 +94,13 @@ def parseData( data, robot, verbose=False ):
         elif commandProject == 1:
             if (commandClass, commandId) == (4,4):
                 lat, lon, alt = struct.unpack("ddd", data[11:11+3*8])
+                robot.positionGPS = (lat, lon, alt)
                 if verbose:
                     print "Position", lat, lon, alt
             elif (commandClass, commandId) == (4,5):
                 speedX, speedY, speedZ = struct.unpack("fff", data[11:11+3*4])
+                robot.speed = (speedX, speedY, speedZ)
+                robot.position = robot.position[0]+POSITION_TIME_DELTA*speedX, robot.position[1]+POSITION_TIME_DELTA*speedY, robot.position[2]+POSITION_TIME_DELTA*speedZ
                 if verbose:
                     print "Speed", speedX, speedY, speedZ
             elif (commandClass, commandId) == (4,6):
@@ -337,7 +342,7 @@ def createVideoAckPacket( data ):
 
 
 class DummyRobot:
-    pass
+    position = (0,0,0)
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
