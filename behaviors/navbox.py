@@ -15,6 +15,9 @@ from bebop import Bebop
 from commands import movePCMDCmd
 from video import VideoFrames
 
+from multiprocessing import Process, Queue
+
+
 # this will be in new separate repository as common library fo robotika Python-powered robots
 from apyros.metalog import MetaLog, disableAsserts
 from apyros.manual import myKbhit, ManualControlException
@@ -48,8 +51,10 @@ def detectRoundel( frame, debug=False ):
 
 g_vf = None
 g_index = 0
+g_queueOut = None
+g_processor = None
 
-def videoCallback( data, robot=None, debug=False ):
+def videoCallbackSingleThread( data, robot=None, debug=False ):
     global g_vf, g_index
     g_vf.append( data )
     frame = g_vf.getFrame()
@@ -69,7 +74,43 @@ def videoCallback( data, robot=None, debug=False ):
                 key = cv2.waitKey(200)
                 cv2.imwrite("img_%03d.jpg" % g_index, img)
                 g_index += 1
-    
+
+
+
+def processMain( queue ):
+    debug = True
+    while True:
+        frame = queue.get()
+        if frame is None:
+            break
+        print "Video", len(frame)
+        # workaround for a single frame
+        f = open( TMP_VIDEO_FILE, "wb" )
+        f.write( frame )
+        f.close()
+        cap = cv2.VideoCapture( TMP_VIDEO_FILE )
+        ret, img = cap.read()
+        cap.release()
+        if ret:
+            print detectRoundel( img, debug=debug )
+            if debug:
+                cv2.imshow('image', img)
+                key = cv2.waitKey(200)
+
+
+def videoCallback( data, robot=None, debug=False ):
+    global g_vf, g_queueOut, g_processor
+    g_vf.append( data )
+    frame = g_vf.getFrame()
+    if frame:
+        if g_queueOut is None:
+            g_queueOut = Queue()
+            g_processor = Process( target=processMain, args=(g_queueOut,) )
+            g_processor.daemon = True
+            g_processor.start()
+        g_queueOut.put_nowait( frame ) # H264 compressed video frame
+
+
 
 
 def testCamera( drone ):
@@ -82,6 +123,9 @@ def testCamera( drone ):
     for i in xrange(200):
         print i,
         drone.update( cmd=None )
+    if g_queueOut is not None:
+        g_queueOut.put_nowait( None )
+        g_processor.join()
 
 
 def testAutomaticLanding( drone ):
@@ -118,8 +162,8 @@ if __name__ == "__main__":
         disableAsserts()
 
     drone = Bebop( metalog=metalog )
-#    testCamera( drone )
-    testAutomaticLanding( drone )
+    testCamera( drone )
+#    testAutomaticLanding( drone )
     print "Battery:", drone.battery, "(%.2f, %.2f, %.2f)" % drone.position
 
 # vim: expandtab sw=4 ts=4 
