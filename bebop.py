@@ -157,6 +157,9 @@ class Bebop:
             self.update( cmd=None )
         print
 
+    def hover( self ):
+        self.update( cmd=movePCMDCmd( active=True, roll=0, pitch=0, yaw=0, gaz=0 ) )
+
     def emergency( self ):
         self.update( cmd=emergencyCmd() )
 
