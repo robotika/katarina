@@ -3,9 +3,10 @@
   ARDrone3 autonomous landing on ARDrone2 box with Orinted Roundel
   usage:
       !!! WORK IN PROGRESS !!!
-       ./navbox.py <task> [<metalog> [<F>]]
+       ./navbox.py <task> [<metalog> [<F>]] | --test <image>
 """
 import sys
+import math
 import cv2
 import numpy as np
 
@@ -27,6 +28,30 @@ TMP_VIDEO_FILE = "video.bin"
 g_mser = None
 
 # 14cm x 3cm, 13cm diameter, innner 2cm x 7cm, space between circle and perpendicular line 5cm
+def removeDuplicities( rectangles, desiredRatio=14.0/3.0 ):
+    "for MSER remove multiple detections of the same strip"
+    radius = 30
+    ret = []
+    for (x,y),(w,h),a in rectangles:
+        for (x2,y2),(w2,h2),a2 in ret:
+            if abs(x-x2) < radius and abs(y-y2) < radius:
+                ratio = max(h,w)/float(min(h,w))
+                ratio2 = max(h2,w2)/float(min(h2,w2))
+                if abs(ratio-desiredRatio) < abs(ratio2-desiredRatio):
+                    # use the bigger one
+                    ret.remove( ((x2,y2),(w2,h2),a2) )
+                    ret.append( ((x,y),(w,h),a) )
+                break
+        else:
+            ret.append( ((x,y),(w,h),a) )
+    return ret
+
+def matchCircRect( circles, rectangles ):
+    if len(circles) < 1 and len(rectangles) < 2:
+        return None
+#    print circles
+#    print rectangles
+    return (circles[0][0], rectangles[1][0])
 
 def detectRoundel( frame, debug=False ):
     global g_mser
@@ -35,17 +60,35 @@ def detectRoundel( frame, debug=False ):
         g_mser = cv2.MSER( _delta = 10, _min_area=100, _max_area=300*50*2 )
     gray = cv2.cvtColor( frame, cv2.COLOR_BGR2GRAY )
     contours = g_mser.detect(gray, None)
-    result = []
+    rectangles = []
+    circles = []
     for cnt in contours:
         rect = cv2.minAreaRect(cnt)
-#        print len(cnt), rect
-        if len(cnt)/float(rect[1][0]*rect[1][1]) > 0.70:
-            result.append( rect )
+        area = len(cnt) # MSER returns all points within area, not boundary points
+        rectangleArea = float(rect[1][0]*rect[1][1])
+        rectangleAspect = max(rect[1][0], rect[1][1]) / float(min(rect[1][0], rect[1][1]))
+        if area/rectangleArea > 0.70 and rectangleAspect > 3.0:
+            rectangles.append( rect )
+        cir = cv2.minEnclosingCircle(cnt)
+        (x,y),radius = cir
+        circleArea = math.pi*radius*radius
+        if area/circleArea > 0.70:
+            circles.append( cir )
+    rectangles = removeDuplicities( rectangles )
+    result = matchCircRect( circles=circles, rectangles=rectangles )
     if debug:
-        for rect in result:
+        for rect in rectangles:
             box = cv2.cv.BoxPoints(rect)
             box = np.int0(box)
             cv2.drawContours( frame,[box],0,(255,0,0),2)
+        for cir in circles:
+            (x,y),radius = cir
+            center = (int(x),int(y))
+            radius = int(radius)
+            cv2.circle(frame, center, radius, (0,255,0), 2)
+        if result:
+            (x1,y1),(x2,y2) = result
+            cv2.line(frame, (int(x1),int(y1)), (int(x2),int(y2)), (0,0,255), 3)
     return result
 
 
@@ -78,7 +121,7 @@ def videoCallbackSingleThread( data, robot=None, debug=False ):
 
 
 def processMain( queue ):
-    debug = True
+    debug = False
     while True:
         frame = queue.get()
         if frame is None:
@@ -118,6 +161,7 @@ def testCamera( drone ):
     global g_vf
     g_vf = VideoFrames( onlyIFrames=True, verbose=False )
     drone.videoCbk = videoCallback
+#    drone.videoCbk = videoCallbackSingleThread
     drone.moveCamera( tilt=-100, pan=0 )
     drone.videoEnable()
     for i in xrange(200):
@@ -131,17 +175,18 @@ def testCamera( drone ):
 def testAutomaticLanding( drone ):
     "Takeoff and land"
     global g_vf
-#    g_vf = VideoFrames( onlyIFrames=True, verbose=False )
-#    drone.videoCbk = videoCallback
+    g_vf = VideoFrames( onlyIFrames=True, verbose=False )
+    drone.videoCbk = videoCallback
     drone.moveCamera( tilt=-100, pan=0 )
     drone.videoEnable()
     try:
         drone.trim()
         drone.takeoff()
-#        drone.flyToAltitude( 1.5 )
-#        for i in xrange(1000):
-#            print i,
-#            drone.update( cmd=None )
+        drone.flyToAltitude( 1.5 )
+        print "COMPLETED", drone.altitude
+        for i in xrange(1000):
+            print i,
+            drone.hover()
         drone.land()
     except ManualControlException, e:
         print
@@ -149,12 +194,22 @@ def testAutomaticLanding( drone ):
         if drone.flyingState is None or drone.flyingState == 1: # taking off
             drone.emergency()
         drone.land()
+    if g_queueOut is not None:
+        g_queueOut.put_nowait( None )
+        g_processor.join()
 
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print __doc__
         sys.exit(2)
+    if sys.argv[1] == "--test":
+        image = cv2.imread( sys.argv[2] )
+        detectRoundel( image, debug=True )
+        cv2.imshow('image', image)
+        key = cv2.waitKey(0)
+        sys.exit(0)
+
     metalog=None
     if len(sys.argv) > 2:
         metalog = MetaLog( filename=sys.argv[2] )
@@ -162,8 +217,8 @@ if __name__ == "__main__":
         disableAsserts()
 
     drone = Bebop( metalog=metalog )
-    testCamera( drone )
-#    testAutomaticLanding( drone )
+#    testCamera( drone )
+    testAutomaticLanding( drone )
     print "Battery:", drone.battery, "(%.2f, %.2f, %.2f)" % drone.position
 
 # vim: expandtab sw=4 ts=4 
