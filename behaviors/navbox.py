@@ -47,7 +47,7 @@ def removeDuplicities( rectangles, desiredRatio=14.0/3.0 ):
     return ret
 
 def matchCircRect( circles, rectangles ):
-    if len(circles) < 1 and len(rectangles) < 2:
+    if len(circles) < 1 or len(rectangles) < 2:
         return None
 #    print circles
 #    print rectangles

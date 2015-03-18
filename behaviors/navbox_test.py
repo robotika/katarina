@@ -10,6 +10,11 @@ class NavBoxTest( unittest.TestCase ):
                       ((519.88, 303.19), (12.06, 54.44), -6.911)]
         self.assertEqual( matchCircRect(circles=circles,rectangles=rectangles), ((467.87, 303.77),(519.88, 303.19)) )
 
+    def testMatchCirRectBug( self ):
+        self.assertEqual( matchCircRect(circles=[],
+            rectangles=[((76.5, 21.5), (43.0, 153.0), -90.0), ((335.5, 357.0), (277.0, 20.0), 0.0), 
+                        ((395.5, 20.5), (215.0, 41.0), -0.0)] ), None )
+
 if __name__ == "__main__":
     unittest.main() 
 # vim: expandtab sw=4 ts=4 
