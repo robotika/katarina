@@ -51,7 +51,9 @@ def matchCircRect( circles, rectangles ):
         return None
 #    print circles
 #    print rectangles
-    return (circles[0][0], rectangles[1][0])
+    rad = circles[0][1]
+    tmpRect = sorted([(abs(max(r[1][0],r[1][1]) - 2*rad), r) for r in rectangles])
+    return (circles[0][0], tmpRect[0][1][0])
 
 def detectRoundel( frame, debug=False ):
     global g_mser
@@ -68,12 +70,13 @@ def detectRoundel( frame, debug=False ):
         rectangleArea = float(rect[1][0]*rect[1][1])
         rectangleAspect = max(rect[1][0], rect[1][1]) / float(min(rect[1][0], rect[1][1]))
         if area/rectangleArea > 0.70 and rectangleAspect > 3.0:
-            rectangles.append( rect )
+            (x,y),(w,h),angle = rect
+            rectangles.append( ((int(x+0.5),int(y+0.5)), (int(w+0.5),int(h+0.5)), int(angle)) )
         cir = cv2.minEnclosingCircle(cnt)
         (x,y),radius = cir
         circleArea = math.pi*radius*radius
         if area/circleArea > 0.70:
-            circles.append( cir )
+            circles.append( ((int(x+0.5),int(y+0.5)),int(radius+0.5)) )
     rectangles = removeDuplicities( rectangles )
     result = matchCircRect( circles=circles, rectangles=rectangles )
     if debug:
