@@ -3,7 +3,7 @@
   ARDrone3 autonomous landing on ARDrone2 box with Orinted Roundel
   usage:
       !!! WORK IN PROGRESS !!!
-       ./navbox.py <task> [<metalog> [<F>]] | --test <image>
+       ./navbox.py <task> [<metalog> [<F>]] | --test <image|video> [<stopAt index>]
 """
 import sys
 import math
@@ -14,7 +14,7 @@ sys.path.append('..') # access to drone source without installation
 
 from bebop import Bebop
 from commands import movePCMDCmd
-from video import VideoFrames
+from video import VideoFrames, navdata2video
 
 from multiprocessing import Process, Queue
 
@@ -51,8 +51,11 @@ def matchCircRect( circles, rectangles ):
         return None
 #    print circles
 #    print rectangles
-    rad = circles[0][1]
-    tmpRect = sorted([(abs(max(r[1][0],r[1][1]) - 2*rad), r) for r in rectangles])
+    (centerX, centerY), rad = circles[0]
+    rect = [r for r in rectangles if math.hypot(r[0][0]-centerX, r[0][1]-centerY) < 2*rad]
+    if len(rect) < 2:
+        return None
+    tmpRect = sorted([(abs(max(r[1][0],r[1][1]) - 2*rad), r) for r in rect])
     return (circles[0][0], tmpRect[0][1][0])
 
 def detectRoundel( frame, debug=False ):
@@ -207,10 +210,35 @@ if __name__ == "__main__":
         print __doc__
         sys.exit(2)
     if sys.argv[1] == "--test":
-        image = cv2.imread( sys.argv[2] )
-        detectRoundel( image, debug=True )
-        cv2.imshow('image', image)
-        key = cv2.waitKey(0)
+        filename = sys.argv[2]
+        stopAt = None
+        if len(sys.argv) > 3:
+            stopAt = int(sys.argv[3])
+        # convert navdata to video if necessary
+        if "navdata" in filename:
+            navdata2video( filename, TMP_VIDEO_FILE )
+            filename = TMP_VIDEO_FILE        
+        cap = cv2.VideoCapture( filename )
+        ret, image = cap.read()
+        index = 0
+        while ret:
+            if stopAt is None or index == stopAt:
+                result = detectRoundel( image, debug=True )
+                print index, result
+                pause = 10
+                if result:
+                    pause = 1000
+                if index == stopAt:
+                    pause = 0
+                cv2.imshow('image', image)
+                key = cv2.waitKey(pause)
+                if key >= 0:
+                    cv2.imwrite( "tmp.jpg", image )
+                    break
+            ret, image = cap.read()
+            index += 1
+        else:
+            key = cv2.waitKey(0)
         sys.exit(0)
 
     metalog=None
