@@ -338,14 +338,10 @@ def testVideoProcessing( robot ):
             else:
                 sys.stderr.write('o')
             prevVideoIndex = g_testVideoIndex
-        if i == 150:
-            robot.videoDisable()
         if i == 200:
             print "X"
-        if i < 200:
-            robot.update( cmd=None )
-        else:
             robot.update( cmd=movePCMDCmd( False, 0, 0, 0, 0 ) )
+        robot.update( cmd=None )
 
 
 def testVideoRecording( robot ):
@@ -361,6 +357,15 @@ def testVideoRecording( robot ):
     print "STOP"
     robot.update( cmd=videoRecordingCmd( on=False ) )
     robot.wait( 2.0 )
+
+
+def testSpin( robot ):
+    "the motors do not spin - the behavior is different to Rolling Spider"
+    for i in xrange(10):
+        robot.update( cmd=movePCMDCmd( True, 0, 0, 0, 0 ) )
+    for i in xrange(10):
+        robot.update( cmd=movePCMDCmd( False, 0, 0, 0, 0 ) )
+
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
@@ -382,6 +387,7 @@ if __name__ == "__main__":
 #    testFlyForward( robot )
     testVideoProcessing( robot )
 #    testVideoRecording( robot )
+#    testSpin( robot )
     print "Battery:", robot.battery
 
 # vim: expandtab sw=4 ts=4 
