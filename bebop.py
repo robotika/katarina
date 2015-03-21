@@ -185,6 +185,7 @@ class Bebop:
         # ARCOMMANDS_ID_PROJECT_ARDRONE3 = 1,
         # ARCOMMANDS_ID_ARDRONE3_CLASS_MEDIASTREAMING = 21,
         # ARCOMMANDS_ID_ARDRONE3_MEDIASTREAMING_CMD_VIDEOENABLE = 0,        
+        self.update( cmd=struct.pack("BBHB", 1, 21, 0, 0) ) # disable first
         self.update( cmd=struct.pack("BBHB", 1, 21, 0, 1) )
 
     def moveCamera( self, tilt, pan ):
@@ -326,16 +327,20 @@ def testTakePicture( robot ):
         robot.update( cmd=None )
 
 
-def videoCallback( data ):
-    print "Video", len(data)
+def videoCallback( data, robot=None, debug=False ):
+    pass #print "Video", len(data)
 
 def testVideoProcessing( robot ):
     print "TEST video"
     robot.videoCbk = videoCallback
     robot.videoEnable()
-    for i in xrange(10):
-        print i,
-        robot.update( cmd=None )
+    for i in xrange(4000):
+        if i % 10 == 0:
+            sys.stderr.write('.')
+        if i < 200:
+            robot.update( cmd=None )
+        else:
+            robot.update( cmd=movePCMDCmd( False, 0, 0, 0, 0 ) )
 
 def testVideoRecording( robot ):
     robot.videoEnable()
@@ -369,8 +374,8 @@ if __name__ == "__main__":
 #    testTakePicture( robot )
 #    testFlying( robot )
 #    testFlyForward( robot )
-#    testVideoProcessing( robot )
-    testVideoRecording( robot )
+    testVideoProcessing( robot )
+#    testVideoRecording( robot )
     print "Battery:", robot.battery
 
 # vim: expandtab sw=4 ts=4 
