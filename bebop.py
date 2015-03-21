@@ -90,12 +90,12 @@ class Bebop:
             print "AssertionError", e
 
 
-    def update( self, cmd=None ):
+    def update( self, cmd=None, ackRequest=False ):
         "send command and return navdata"
         if cmd is None:
             data = self._update( None )
         else:
-            data = self._update( packData(cmd) )
+            data = self._update( packData(cmd, ackRequest=ackRequest) )
         while True:
             if ackRequired(data):
                 self._parseData( data )
@@ -181,26 +181,20 @@ class Bebop:
         self.update( cmd=takePictureCmd() )
 
     def videoEnable( self ):
-        "enable video stream?"
-        # ARCOMMANDS_ID_PROJECT_ARDRONE3 = 1,
-        # ARCOMMANDS_ID_ARDRONE3_CLASS_MEDIASTREAMING = 21,
-        # ARCOMMANDS_ID_ARDRONE3_MEDIASTREAMING_CMD_VIDEOENABLE = 0,        
-        self.update( cmd=struct.pack("BBHB", 1, 21, 0, 0) ) # disable first
-        self.update( cmd=struct.pack("BBHB", 1, 21, 0, 1) )
+        "enable video stream"
+        self.update( cmd=videoStreamingCmd( enable=True ), ackRequest=True )
+
+    def videoDisable( self ):
+        "enable video stream"
+        self.update( cmd=videoStreamingCmd( enable=False ), ackRequest=True )
 
     def moveCamera( self, tilt, pan ):
         "Tilt/Pan camera consign for the drone (in degrees)"
-        # ARCOMMANDS_ID_PROJECT_ARDRONE3 = 1,
-        # ARCOMMANDS_ID_ARDRONE3_CLASS_CAMERA = 1,
-        # ARCOMMANDS_ID_ARDRONE3_CAMERA_CMD_ORIENTATION = 0,
-        self.update( cmd=struct.pack("BBHbb", 1, 1, 0, tilt, pan) )
+        self.update( cmd=moveCameraCmd( tilt=tilt, pan=pan) )
         self.cameraTilt, self.cameraPan = tilt, pan # maybe move this to parse data, drone should confirm that
 
     def resetHome( self ):
-        # ARCOMMANDS_ID_PROJECT_ARDRONE3 = 1
-        # ARCOMMANDS_ID_ARDRONE3_CLASS_GPSSETTINGS = 23
-        # ARCOMMANDS_ID_ARDRONE3_GPSSETTINGS_CMD_RESETHOME = 1
-        self.update( cmd=struct.pack("BBH", 1, 23, 1) )
+        self.update( cmd=resetHomeCmd() )
 
 
     def wait( self, duration ):
@@ -326,21 +320,33 @@ def testTakePicture( robot ):
         print i,
         robot.update( cmd=None )
 
-
+g_testVideoIndex = 0
 def videoCallback( data, robot=None, debug=False ):
+    global g_testVideoIndex
+    g_testVideoIndex += 1
     pass #print "Video", len(data)
 
 def testVideoProcessing( robot ):
     print "TEST video"
     robot.videoCbk = videoCallback
     robot.videoEnable()
-    for i in xrange(4000):
+    prevVideoIndex = 0
+    for i in xrange(400):
         if i % 10 == 0:
-            sys.stderr.write('.')
+            if prevVideoIndex == g_testVideoIndex:
+                sys.stderr.write('.')
+            else:
+                sys.stderr.write('o')
+            prevVideoIndex = g_testVideoIndex
+        if i == 150:
+            robot.videoDisable()
+        if i == 200:
+            print "X"
         if i < 200:
             robot.update( cmd=None )
         else:
             robot.update( cmd=movePCMDCmd( False, 0, 0, 0, 0 ) )
+
 
 def testVideoRecording( robot ):
     robot.videoEnable()

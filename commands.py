@@ -94,5 +94,29 @@ def setSpeedSettingsCmdList( maxVerticalSpeed, maxRotationSpeed, hullProtection,
             struct.pack("BBHB", 1, 11, 2, hullProtection),
             struct.pack("BBHB", 1, 11, 3, outdoor) ]
 
+
+def videoStreamingCmd( enable ):
+    "enable video stream?"
+    # ARCOMMANDS_ID_PROJECT_ARDRONE3 = 1,
+    # ARCOMMANDS_ID_ARDRONE3_CLASS_MEDIASTREAMING = 21,
+    # ARCOMMANDS_ID_ARDRONE3_MEDIASTREAMING_CMD_VIDEOENABLE = 0,        
+    return struct.pack("BBHB", 1, 21, 0, enable)
+
+
+def moveCameraCmd( tilt, pan ):
+    "Tilt/Pan camera consign for the drone (in degrees)"
+    # ARCOMMANDS_ID_PROJECT_ARDRONE3 = 1,
+    # ARCOMMANDS_ID_ARDRONE3_CLASS_CAMERA = 1,
+    # ARCOMMANDS_ID_ARDRONE3_CAMERA_CMD_ORIENTATION = 0,
+    return struct.pack("BBHbb", 1, 1, 0, tilt, pan)
+
+
+def resetHomeCmd():
+    # ARCOMMANDS_ID_PROJECT_ARDRONE3 = 1
+    # ARCOMMANDS_ID_ARDRONE3_CLASS_GPSSETTINGS = 23
+    # ARCOMMANDS_ID_ARDRONE3_GPSSETTINGS_CMD_RESETHOME = 1
+    return struct.pack("BBH", 1, 23, 1)
+
+
 # vim: expandtab sw=4 ts=4 
 

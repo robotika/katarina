@@ -18,6 +18,7 @@ ARNETWORK_MANAGER_INTERNAL_BUFFER_ID_PONG = 1
 POSITION_TIME_DELTA = 0.2 # estimated to 5Hz
 
 g_seq = 1
+g_seq2 = 1 # with ACK request
 g_seqAck = 1
 g_seqPongAck = 1
 g_seqVideoAck = 1
@@ -26,12 +27,17 @@ def printHex( data ):
     print " ".join(["%02X" % ord(x) for x in data])
 
 
-def packData( payload ):
-    global g_seq
+def packData( payload, ackRequest=False ):
+    global g_seq, g_seq2
     frameType = 2
-    frameId = 10 # up to 127? no idea
-    frameSeq = g_seq
-    g_seq += 1
+    if ackRequest:
+        frameId = 11
+        frameSeq = g_seq2
+        g_seq2 += 1
+    else:
+        frameId = 10
+        frameSeq = g_seq
+        g_seq += 1
     buf = struct.pack("<BBBI", frameType, frameId, frameSeq % 256, len(payload)+7)
     return buf + payload
 
@@ -88,7 +94,8 @@ def parseData( data, robot, verbose=False ):
                 # ARCOMMANDS_ID_COMMON_CLASS_COMMONSTATE = 5,
                 # ARCOMMANDS_ID_COMMON_COMMONSTATE_CMD_WIFISIGNALCHANGED = 7,
                 rssi = struct.unpack("h", data[7:7+2])[0] # RSSI of the signal between controller and the product (in dbm)
-                print "Wifi", rssi
+                if verbose:
+                    print "Wifi", rssi
             else:
                 printHex( data[:frameSize] )
         elif commandProject == 1:
