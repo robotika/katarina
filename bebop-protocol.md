@@ -96,4 +96,13 @@ per fragment in the video acknowledge message.
 Drone sends approximately twice a second "ping" packet. It is necessary to take
 received data (containing timestamp) and send them back.
 
+### Sending PCMD Data
+
+Once you are sending motion commands (PCMD) make sure you are sending them with
+fixed frequency even if it is repetition of the same command. Free Flight is
+using 40Hz. Otherwise you may loose your video streaming as the Drone is
+interpreting non-regular PCMD as "bad wifi". See [1].
+
+
+[1] https://github.com/ARDroneSDK3/libARCommands/issues/4
 
