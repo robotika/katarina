@@ -77,12 +77,12 @@ class Bebop:
                 # raise exception only once
                 raise ManualControlException()
 
-        while len(self.buf) == 0:
-            data = self.navdata.recv(4094)
-            self.buf += data
         if cmd is not None:
             self.command.sendto( cmd, (HOST, COMMAND_PORT) )
         self.command.separator( "\xFF" )
+        while len(self.buf) == 0:
+            data = self.navdata.recv(4094)
+            self.buf += data
         data, self.buf = cutPacket( self.buf )
         return data
 
