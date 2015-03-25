@@ -9,7 +9,6 @@ import socket
 import datetime
 import struct
 import time
-from threading import Thread,Event,Lock
 
 from navdata import *
 from commands import *
@@ -34,7 +33,12 @@ class Bebop:
             metalog = MetaLog()
         self.navdata = metalog.createLoggedSocket( "navdata", headerFormat="<BBBI" )
         self.navdata.bind( ('',NAVDATA_PORT) )
-        self.command = metalog.createLoggedSocket( "cmd", headerFormat="<BBBI" )
+        if metalog.replay:
+            self.commandSender = CommandSenderReplay(metalog.createLoggedSocket( "cmd", headerFormat="<BBBI" ), 
+                    hostPortPair=(HOST, COMMAND_PORT))
+        else:
+            self.commandSender = CommandSender(metalog.createLoggedSocket( "cmd", headerFormat="<BBBI" ), 
+                    hostPortPair=(HOST, COMMAND_PORT))
         self.console = metalog.createLoggedInput( "console", myKbhit ).get
         self.metalog = metalog
         self.buf = ""
@@ -50,6 +54,7 @@ class Bebop:
         self.positionGPS = None
         self.cameraTilt, self.cameraPan = 0,0
         self.config()
+        self.commandSender.start()
         
     def _discovery( self ):
         "start communication with the robot"
@@ -77,9 +82,9 @@ class Bebop:
                 # raise exception only once
                 raise ManualControlException()
 
-        if cmd is not None:
-            self.command.sendto( cmd, (HOST, COMMAND_PORT) )
-        self.command.separator( "\xFF" )
+        # send even None, to sync in/out queues
+        self.commandSender.send( cmd )
+
         while len(self.buf) == 0:
             data = self.navdata.recv(4094)
             self.buf += data
@@ -329,19 +334,6 @@ def videoCallback( data, robot=None, debug=False ):
     g_testVideoIndex += 1
     pass #print "Video", len(data)
 
-class PCMDSender( Thread ):
-    "it is necessary to send PCMD with fixed frequency - Free Flight uses 40Hz/25ms"
-    def __init__( self, commandChannel ):
-        Thread.__init__( self )
-        self.setDaemon( True )
-        self.shouldIRun = Event()
-        self.shouldIRun.set()
-        self.command = commandChannel
-    def run( self ):
-        while self.shouldIRun.isSet():
-            cmd = packData( movePCMDCmd( False, 0, 0, 0, 0 ) )
-            self.command.sendto( cmd, (HOST, COMMAND_PORT) )
-            time.sleep(0.025) # 40Hz
 
 
 def testVideoProcessing( robot ):
@@ -349,7 +341,6 @@ def testVideoProcessing( robot ):
     robot.videoCbk = videoCallback
     robot.videoEnable()
     prevVideoIndex = 0
-    sender40Hz = PCMDSender(robot.command)
     for i in xrange(400):
         if i % 10 == 0:
             if prevVideoIndex == g_testVideoIndex:
@@ -359,10 +350,8 @@ def testVideoProcessing( robot ):
             prevVideoIndex = g_testVideoIndex
         if i == 200:
             print "X"
-            sender40Hz.start()
+            robot.update( cmd=movePCMDCmd( False, 0, 0, 0, 0 ) )
         robot.update( cmd=None )
-    sender40Hz.shouldIRun.clear()
-    sender40Hz.join()
 
 def testVideoRecording( robot ):
     robot.videoEnable()

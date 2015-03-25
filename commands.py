@@ -1,7 +1,13 @@
 """
   Encode Parrot Bebop commands
+  (possible usage also as parsing command log files)
+  usage:
+      ./commands.py <cmd log file>
 """
+import time
 import struct
+from threading import Thread,Event,Lock
+from collections import defaultdict
 
 def takeoffCmd():
     # ARCOMMANDS_ID_PROJECT_ARDRONE3 = 1,
@@ -36,7 +42,7 @@ def movePCMDCmd( active, roll, pitch, yaw, gaz ):
     flag = 0
     if active:
         flag = 1
-    return struct.pack("BBHBbbbbf", 1, 0, 2, flag, roll, pitch, yaw, gaz, psi )
+    return struct.pack("<BBHBbbbbf", 1, 0, 2, flag, roll, pitch, yaw, gaz, psi )
 
 
 def videoAutorecordingCmd( enabled=True ):
@@ -116,6 +122,113 @@ def resetHomeCmd():
     # ARCOMMANDS_ID_ARDRONE3_CLASS_GPSSETTINGS = 23
     # ARCOMMANDS_ID_ARDRONE3_GPSSETTINGS_CMD_RESETHOME = 1
     return struct.pack("BBH", 1, 23, 1)
+
+
+def packData( payload, ackRequest=False ):
+    frameType = 2
+    if ackRequest:
+        frameId = 11
+    else:
+        frameId = 10
+    buf = struct.pack("<BBBI", frameType, frameId, 0, len(payload)+7)
+    return buf + payload
+
+
+class CommandSender( Thread ):
+    "it is necessary to send PCMD with fixed frequency - Free Flight uses 40Hz/25ms"
+    INTERNAL_COMMAND_PREFIX = chr(0x42)
+    EXTERNAL_COMMAND_PREFIX = chr(0x33)
+    def __init__( self, commandChannel, hostPortPair ):
+        Thread.__init__( self )
+        self.setDaemon( True )
+        self.shouldIRun = Event()
+        self.shouldIRun.set()
+        self.lock = Lock()
+        self.command = commandChannel
+        self.hostPortPair = hostPortPair
+        self.seqId = defaultdict( int )
+        self.cmd = packData( movePCMDCmd( False, 0, 0, 0, 0 ) )
+        assert self.isPCMD( self.cmd )
+
+    def updateSeq( self, cmd ):
+        "relace sequential byte based on 'channel'"
+        assert len(cmd) > 3, repr(cmd)
+        frameId = cmd[1]
+        self.seqId[ frameId ] += 1
+        return cmd[:2] + chr(self.seqId[frameId] % 256) + cmd[3:]
+
+    def isPCMD( self, cmd ):
+        if len(cmd) != 7+13: # BBHBbbbbf
+            return False
+        return struct.unpack("BBH", cmd[7:7+4]) == (1, 0, 2)
+
+    def send( self, cmd ):
+        self.lock.acquire()
+        self.command.separator( self.EXTERNAL_COMMAND_PREFIX )
+        if cmd is not None:
+            if self.isPCMD( cmd ):
+                self.cmd = cmd
+                self.command.separator( cmd ) # just store the command without sending it
+            else:
+                self.command.sendto( self.updateSeq(cmd), self.hostPortPair )
+        self.command.separator( "\xFF" )
+        self.lock.release()
+
+    def run( self ):
+        while self.shouldIRun.isSet():
+            self.lock.acquire()
+            self.command.separator( self.INTERNAL_COMMAND_PREFIX )
+            self.command.sendto( self.updateSeq(self.cmd), self.hostPortPair )
+            self.command.separator( "\xFF" )
+            self.lock.release()
+            time.sleep(0.025) # 40Hz
+
+class CommandSenderReplay( CommandSender ):
+    "fake class to replay synced messages"
+    def __init__( self, commandChannel, hostPortPair ):
+        CommandSender.__init__( self, commandChannel, hostPortPair )
+
+    def start( self ):
+        "block default Thread behavior"
+        print "STARTED Replay"
+
+    def send( self, cmd ):
+        prefix = self.command.debugRead(1)
+        while prefix == self.INTERNAL_COMMAND_PREFIX:
+            self.command.separator( self.updateSeq(self.cmd) ) # just verify command identity
+            self.command.separator( "\xFF" )
+            prefix = self.command.debugRead(1)
+        assert prefix == self.EXTERNAL_COMMAND_PREFIX, hex(ord(prefix))
+
+        if cmd is not None:
+            if self.isPCMD( cmd ):
+                self.cmd = cmd
+                self.command.separator( cmd ) # just verify command identity
+            else:
+                self.command.sendto( self.updateSeq(cmd), self.hostPortPair )
+        self.command.separator( "\xFF" )
+
+
+if __name__ == "__main__":
+    import sys
+    if len(sys.argv) < 2:
+        print __doc__
+        sys.exit(2)
+    f = open(sys.argv[1], "rb")
+    prefix = f.read(1)
+    while len(prefix) > 0:
+        print hex(ord(prefix))
+        assert prefix in [CommandSender.INTERNAL_COMMAND_PREFIX, CommandSender.EXTERNAL_COMMAND_PREFIX]
+        term = f.read(1)
+        if term != "\xFF":
+            header = term + f.read(6)
+            frameType, frameId, seqId, totalLen = struct.unpack( "<BBBI", header )
+            data = header + f.read( totalLen-7 )
+            print " ".join(["%02X" % ord(x) for x in data])
+            term = f.read(1)
+        else:
+            print "EMPTY"
+        prefix = f.read(1)
 
 
 # vim: expandtab sw=4 ts=4 

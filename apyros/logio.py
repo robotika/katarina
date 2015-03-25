@@ -70,6 +70,11 @@ class ReplayLog:
         if self.checkAssert:
             assert data == sep, (data, sep)
 
+    def debugRead( self, size ):
+        data = self.f.read( size )
+        if len(data) != size:
+            raise EOFError
+        return data
 
 # vim: expandtab sw=4 ts=4 
 

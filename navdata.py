@@ -17,29 +17,10 @@ ARNETWORK_MANAGER_INTERNAL_BUFFER_ID_PONG = 1
 
 POSITION_TIME_DELTA = 0.2 # estimated to 5Hz
 
-g_seq = 1
-g_seq2 = 1 # with ACK request
-g_seqAck = 1
-g_seqPongAck = 1
-g_seqVideoAck = 1
 
 def printHex( data ):
     print " ".join(["%02X" % ord(x) for x in data])
 
-
-def packData( payload, ackRequest=False ):
-    global g_seq, g_seq2
-    frameType = 2
-    if ackRequest:
-        frameId = 11
-        frameSeq = g_seq2
-        g_seq2 += 1
-    else:
-        frameId = 10
-        frameSeq = g_seq
-        g_seq += 1
-    buf = struct.pack("<BBBI", frameType, frameId, frameSeq % 256, len(payload)+7)
-    return buf + payload
 
 def parseFrameType( data ):
     if len(data) < 7:
@@ -267,8 +248,6 @@ def ackRequired( data ):
 
 
 def createAckPacket( data ):
-    global g_seqAck
-
     assert len(data) >= 7, len(data)
     frameType, frameId, frameSeq, frameSize = struct.unpack("<BBBI", data[:7])
     assert frameType == 0x4, frameType
@@ -282,9 +261,7 @@ def createAckPacket( data ):
 
     frameType = ARNETWORKAL_FRAME_TYPE_ACK
     frameId = 0xFE # 0x7E + 0x80
-    frameSeq = g_seqAck
-    g_seqAck += 1
-    buf = struct.pack("<BBBI", frameType, frameId, frameSeq % 256, len(payload)+7)
+    buf = struct.pack("<BBBI", frameType, frameId, 0, len(payload)+7)
     return buf + payload
 
 
@@ -295,7 +272,6 @@ def pongRequired( data ):
     return frameId == ARNETWORK_MANAGER_INTERNAL_BUFFER_ID_PING
 
 def createPongPacket( data ):
-    global g_seqPongAck
     assert len(data) >= 7, len(data)
     frameType, frameId, frameSeq, frameSize = struct.unpack("<BBBI", data[:7])
     assert frameType == 0x2, frameType
@@ -305,9 +281,7 @@ def createPongPacket( data ):
     payload = data[7:]
     frameType = 2
     frameId = ARNETWORK_MANAGER_INTERNAL_BUFFER_ID_PONG
-    frameSeq = g_seqPongAck
-    g_seqPongAck += 1
-    buf = struct.pack("<BBBI", frameType, frameId, frameSeq % 256, len(payload)+7)
+    buf = struct.pack("<BBBI", frameType, frameId, 0, len(payload)+7)
     return buf + payload
 
 
@@ -322,7 +296,7 @@ g_lowPacketsAck = 0
 g_highPacketsAck = 0
 
 def createVideoAckPacket( data ):
-    global g_currentVideoFrameNumber, g_lowPacketsAck, g_highPacketsAck, g_seqVideoAck
+    global g_currentVideoFrameNumber, g_lowPacketsAck, g_highPacketsAck
 
     assert len(data) >= 12, len(data)
     frameNumber, frameFlags, fragmentNumber, fragmentsPerFrame = struct.unpack("<HBBB", data[7:12])
@@ -341,9 +315,7 @@ def createVideoAckPacket( data ):
     payload = struct.pack("<HQQ", frameNumber, g_highPacketsAck, g_lowPacketsAck )
     frameType = 2
     frameId = 13
-    frameSeq = g_seqVideoAck
-    g_seqVideoAck += 1
-    buf = struct.pack("<BBBI", frameType, frameId, frameSeq % 256, len(payload)+7)
+    buf = struct.pack("<BBBI", frameType, frameId, 0, len(payload)+7)
     return buf + payload
 
 
