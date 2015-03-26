@@ -66,7 +66,6 @@ class Bebop:
         while True:
             data = s.recv(10240)
             if len(data) > 0:
-                print len(data)
                 f.write(data)
                 f.flush()
                 break
@@ -119,6 +118,11 @@ class Bebop:
                 break
         self._parseData( data )
         return data
+
+
+    def setVideoCallback( self, cbk ):
+        self.videoCbk = cbk
+
 
     def config( self ):
         # initial cfg

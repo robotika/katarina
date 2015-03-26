@@ -118,9 +118,11 @@ def parseData( data, robot, verbose=False ):
             if verbose:
                 print "Battery", battery
         elif (commandProject, commandClass, commandId) == (0,5,4):
-            print "Date:", data[11:frameSize-1]
+            if verbose:
+                print "Date:", data[11:frameSize-1]
         elif (commandProject, commandClass, commandId) == (0,5,5):
-            print "Time:", data[11:frameSize-1]
+            if verbose:
+                print "Time:", data[11:frameSize-1]
         elif (commandProject, commandClass) == (0,14):
             # ARCOMMANDS_ID_COMMON_CLASS_CALIBRATIONSTATE = 14,
             if commandId == 0:
@@ -226,11 +228,13 @@ def parseData( data, robot, verbose=False ):
                 print "GPSDebugState, numSat =", struct.unpack("B", data[11:11+1])[0]
 
         elif commandProject == 129:
-            print "DEBUG",
-            printHex( data[:frameSize] )
+            if verbose:
+                print "DEBUG",
+                printHex( data[:frameSize] )
         else:
-            print "Unknown ACK:",
-            printHex( data[:frameSize] )
+            if verbose:
+                print "Unknown ACK:",
+                printHex( data[:frameSize] )
     elif frameId == 0x0: # ARNETWORK_MANAGER_INTERNAL_BUFFER_ID_PING
         assert frameSize == 15, len(data)
         seconds, nanoseconds = struct.unpack("<II", data[7:15])

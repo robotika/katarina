@@ -29,7 +29,7 @@ class MetaLog:
         if filename is None:
             self.replay = False
             self.filename = datetime.datetime.now().strftime("logs/meta_%y%m%d_%H%M%S.log")
-            print "METALOG:", self.filename
+            sys.stderr.write( "METALOG: %s\n" % self.filename )
             self.f = open( self.filename, "w" )
             self.f.write( str(sys.argv)+"\n" )
             self.f.flush()
