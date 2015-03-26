@@ -205,6 +205,35 @@ def testAutomaticLanding( drone ):
         g_processor.join()
 
 
+def testVideoStream( filename, stopAt=None ):
+    "revise only logged video data"
+    # convert navdata to video if necessary
+    if "navdata" in filename:
+        navdata2video( filename, TMP_VIDEO_FILE )
+        filename = TMP_VIDEO_FILE        
+    cap = cv2.VideoCapture( filename )
+    ret, image = cap.read()
+    index = 0
+    while ret:
+        if stopAt is None or index == stopAt:
+            result = detectRoundel( image, debug=True )
+            print index, result
+            pause = 10
+            if result:
+                pause = 1000
+            if index == stopAt:
+                pause = 0
+            cv2.imshow('image', image)
+            key = cv2.waitKey(pause)
+            if key >= 0:
+                cv2.imwrite( "tmp.jpg", image )
+                break
+        ret, image = cap.read()
+        index += 1
+    else:
+        key = cv2.waitKey(0)
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print __doc__
@@ -214,31 +243,7 @@ if __name__ == "__main__":
         stopAt = None
         if len(sys.argv) > 3:
             stopAt = int(sys.argv[3])
-        # convert navdata to video if necessary
-        if "navdata" in filename:
-            navdata2video( filename, TMP_VIDEO_FILE )
-            filename = TMP_VIDEO_FILE        
-        cap = cv2.VideoCapture( filename )
-        ret, image = cap.read()
-        index = 0
-        while ret:
-            if stopAt is None or index == stopAt:
-                result = detectRoundel( image, debug=True )
-                print index, result
-                pause = 10
-                if result:
-                    pause = 1000
-                if index == stopAt:
-                    pause = 0
-                cv2.imshow('image', image)
-                key = cv2.waitKey(pause)
-                if key >= 0:
-                    cv2.imwrite( "tmp.jpg", image )
-                    break
-            ret, image = cap.read()
-            index += 1
-        else:
-            key = cv2.waitKey(0)
+        testVideoStream( filename=filename, stopAt=stopAt )
         sys.exit(0)
 
     metalog=None
