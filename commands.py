@@ -149,6 +149,8 @@ class CommandSender( Thread ):
         self.seqId = defaultdict( int )
         self.cmd = packData( movePCMDCmd( False, 0, 0, 0, 0 ) )
         assert self.isPCMD( self.cmd )
+        self.index = 0
+        self.dropIndex = 7 # fake wifi problems
 
     def updateSeq( self, cmd ):
         "relace sequential byte based on 'channel'"
@@ -176,11 +178,13 @@ class CommandSender( Thread ):
 
     def run( self ):
         while self.shouldIRun.isSet():
-            self.lock.acquire()
-            self.command.separator( self.INTERNAL_COMMAND_PREFIX )
-            self.command.sendto( self.updateSeq(self.cmd), self.hostPortPair )
-            self.command.separator( "\xFF" )
-            self.lock.release()
+            self.index += 1
+            if self.dropIndex is not None and self.index % self.dropIndex != 0:
+                self.lock.acquire()
+                self.command.separator( self.INTERNAL_COMMAND_PREFIX )
+                self.command.sendto( self.updateSeq(self.cmd), self.hostPortPair )
+                self.command.separator( "\xFF" )
+                self.lock.release()
             time.sleep(0.025) # 40Hz
 
 class CommandSenderReplay( CommandSender ):

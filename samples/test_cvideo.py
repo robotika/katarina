@@ -34,7 +34,7 @@ def processMain( queue ):
         ret = cvideo.frame( img, 1, frame )
         assert ret
         cv2.imshow('image', img)
-        key = cv2.waitKey(100)
+        key = cv2.waitKey(1)
         if key >= 0:
             break
 
@@ -57,7 +57,7 @@ def videoCallback( data, robot=None, debug=False ):
 def testCVideo( drone ):
     drone.videoCbk = videoCallback
     drone.videoEnable()
-    for i in xrange(1000):
+    for i in xrange(400):
         drone.update()
     if g_queueOut is not None:
         g_queueOut.put_nowait( None )
