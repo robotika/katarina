@@ -16,6 +16,8 @@ class VideoFrames:
         self.currentFrameNumber = None
         self.parts = None
         self.frames = []
+        self.statFirst, self.statLast = None, None
+        self.statCount = 0
 
     def append( self, packet ):
         "append video packet with piece of frame"
@@ -34,6 +36,10 @@ class VideoFrames:
                 self.frames.append( s )
             if self.verbose:
                 print "processing", frameNumber
+                if self.statFirst is None:
+                    self.statFirst = frameNumber
+                self.statLast = frameNumber
+                self.statCount += 1
             self.currentFrameNumber = frameNumber
             if self.onlyIFrames and frameFlags != 1:
                 self.parts = None
@@ -52,6 +58,11 @@ class VideoFrames:
         self.frames = self.frames[1:]
         return frame
 
+    def stat( self ):
+        if self.verbose:
+            if self.statFirst != self.statLast:
+                print "Stat:", self.statFirst, self.statLast, self.statCount, 
+                print "%.1f%%" %  (100*self.statCount/float(self.statLast-self.statFirst+1),)
 
 
 def navdata2video( inputFile, outputFile, outDir = ".", dumpIndividualFrames=False, startIndex=0 ):
@@ -72,6 +83,7 @@ def navdata2video( inputFile, outputFile, outDir = ".", dumpIndividualFrames=Fal
                 frameIndex += 1
             out.write(frame)
     out.close()
+    vf.stat()
 
 
 if __name__ == "__main__":
