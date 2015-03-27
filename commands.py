@@ -179,7 +179,7 @@ class CommandSender( Thread ):
     def run( self ):
         while self.shouldIRun.isSet():
             self.index += 1
-            if self.dropIndex is not None and self.index % self.dropIndex != 0:
+            if self.dropIndex is None or self.index % self.dropIndex != 0:
                 self.lock.acquire()
                 self.command.separator( self.INTERNAL_COMMAND_PREFIX )
                 self.command.sendto( self.updateSeq(self.cmd), self.hostPortPair )
