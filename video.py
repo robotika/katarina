@@ -34,7 +34,7 @@ class VideoFrames:
                             print (self.currentFrameNumber, i, len(self.parts))
                         continue
                     s += d
-                self.frames.append( (self.currentFrameFlags, s) )
+                self.frames.append( (self.currentFrameNumber, self.currentFrameFlags, s) )
             if self.verbose:
                 print "processing", frameNumber
                 if self.statFirst is None:

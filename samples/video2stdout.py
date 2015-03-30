@@ -13,21 +13,14 @@ if sys.platform == "win32":
 
 sys.path.append('..') # access to drone source without installation
 from bebop import Bebop
-from video import VideoFrames
 
-
-g_vf = VideoFrames( onlyIFrames=False, verbose=False )
-def videoCallback( data, robot=None, debug=False ):
-    global g_vf
-    g_vf.append( data )
-    frame = g_vf.getFrame()
-    if frame:
-        sys.stdout.write( frame )
-        sys.stdout.flush()
+def videoCallback( frame, robot=None, debug=False ):
+    sys.stdout.write( frame[-1] ) # ignore frameNumber and frameFlag
+    sys.stdout.flush()
 
 
 def video2stdout():
-    drone = Bebop( metalog=None )
+    drone = Bebop( metalog=None, onlyIFrames=False )
     drone.videoCbk = videoCallback
     drone.videoEnable()
     while True:

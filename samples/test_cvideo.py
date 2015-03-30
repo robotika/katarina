@@ -8,7 +8,6 @@ import sys
 
 sys.path.append('..') # access to drone source without installation
 from bebop import Bebop
-from video import VideoFrames
 from apyros.metalog import MetaLog, disableAsserts
 from apyros.manual import myKbhit, ManualControlException
 
@@ -18,7 +17,6 @@ import cvideo
 import numpy as np
 import cv2
 
-g_vf = None
 g_queueOut = None
 g_processor = None
 
@@ -31,7 +29,7 @@ def processMain( queue ):
         if frame is None:
             break
         sys.stderr.write('.')
-        ret = cvideo.frame( img, frame[0], frame[1] )
+        ret = cvideo.frame( img, frame[1], frame[2] )
         assert ret
         cv2.imshow('image', img)
         key = cv2.waitKey(1)
@@ -39,19 +37,14 @@ def processMain( queue ):
             break
 
 
-def videoCallback( data, robot=None, debug=False ):
-    global g_vf, g_queueOut, g_processor
-    if g_vf is None:
-        g_vf = VideoFrames( onlyIFrames=False, verbose=False )
-    g_vf.append( data )
-    frame = g_vf.getFrameEx()
-    if frame:
-        if g_queueOut is None:
-            g_queueOut = Queue()
-            g_processor = Process( target=processMain, args=(g_queueOut,) )
-            g_processor.daemon = True
-            g_processor.start()
-        g_queueOut.put_nowait( frame ) # H264 compressed video frame
+def videoCallback( frame, robot=None, debug=False ):
+    global g_queueOut, g_processor
+    if g_queueOut is None:
+        g_queueOut = Queue()
+        g_processor = Process( target=processMain, args=(g_queueOut,) )
+        g_processor.daemon = True
+        g_processor.start()
+    g_queueOut.put_nowait( frame ) # H264 compressed video frame
 
 
 def testCVideo( drone ):
@@ -73,7 +66,7 @@ if __name__ == "__main__":
         metalog = MetaLog( filename=sys.argv[2] )
     if len(sys.argv) > 3 and sys.argv[3] == 'F':
         disableAsserts()
-    drone = Bebop( metalog=metalog )
+    drone = Bebop( metalog=metalog, onlyIFrames=False )
     testCVideo( drone )
 
 # vim: expandtab sw=4 ts=4 

@@ -12,6 +12,7 @@ import time
 
 from navdata import *
 from commands import *
+from video import VideoFrames
 
 # this will be in new separate repository as common library fo robotika Python-powered robots
 from apyros.metalog import MetaLog, disableAsserts
@@ -27,7 +28,7 @@ NAVDATA_PORT = 43210 # d2c_port
 COMMAND_PORT = 54321 # c2d_port
 
 class Bebop:
-    def __init__( self, metalog=None ):
+    def __init__( self, metalog=None, onlyIFrames=True ):
         if metalog is None:
             self._discovery()
             metalog = MetaLog()
@@ -42,6 +43,7 @@ class Bebop:
         self.console = metalog.createLoggedInput( "console", myKbhit ).get
         self.metalog = metalog
         self.buf = ""
+        self.videoFrameProcessor = VideoFrames( onlyIFrames=onlyIFrames, verbose=False )
         self.videoCbk = None
         self.battery = None
         self.flyingState = None
@@ -53,6 +55,7 @@ class Bebop:
         self.speed = (0,0,0)
         self.positionGPS = None
         self.cameraTilt, self.cameraPan = 0,0
+        self.lastImageResult = None
         self.config()
         self.commandSender.start()
         
@@ -112,7 +115,12 @@ class Bebop:
                 data = self._update( createPongPacket(data) )
             elif videoAckRequired(data):
                 if self.videoCbk:
-                    self.videoCbk( data, robot=self, debug=self.metalog.replay )
+                    self.videoFrameProcessor.append( data )
+                    frame = self.videoFrameProcessor.getFrameEx()
+                    if frame:
+                        ret = self.videoCbk( frame, debug=self.metalog.replay )
+                        if ret is not None:
+                            self.lastImageResult = ret
                 data = self._update( createVideoAckPacket(data) )
             else:
                 break

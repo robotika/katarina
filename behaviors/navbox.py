@@ -14,7 +14,7 @@ sys.path.append('..') # access to drone source without installation
 
 from bebop import Bebop
 from commands import movePCMDCmd
-from video import VideoFrames, navdata2video
+from video import navdata2video
 
 from multiprocessing import Process, Queue
 
@@ -98,31 +98,27 @@ def detectRoundel( frame, debug=False ):
     return result
 
 
-g_vf = None
 g_index = 0
 g_queueOut = None
 g_processor = None
 
-def videoCallbackSingleThread( data, robot=None, debug=False ):
-    global g_vf, g_index
-    g_vf.append( data )
-    frame = g_vf.getFrame()
-    if frame:
-        print "Video", len(frame)
-        # workaround for a single frame
-        f = open( TMP_VIDEO_FILE, "wb" )
-        f.write( frame )
-        f.close()
-        cap = cv2.VideoCapture( TMP_VIDEO_FILE )
-        ret, img = cap.read()
-        cap.release()
-        if ret:
-            detectRoundel( img, debug=debug )
-            if debug:
-                cv2.imshow('image', img)
-                key = cv2.waitKey(200)
-                cv2.imwrite("img_%03d.jpg" % g_index, img)
-                g_index += 1
+def videoCallbackSingleThread( frame, robot=None, debug=False ):
+    global g_index
+    print "Video", len(frame)
+    # workaround for a single frame
+    f = open( TMP_VIDEO_FILE, "wb" )
+    f.write( frame )
+    f.close()
+    cap = cv2.VideoCapture( TMP_VIDEO_FILE )
+    ret, img = cap.read()
+    cap.release()
+    if ret:
+        detectRoundel( img, debug=debug )
+        if debug:
+            cv2.imshow('image', img)
+            key = cv2.waitKey(200)
+            cv2.imwrite("img_%03d.jpg" % g_index, img)
+            g_index += 1
 
 
 
@@ -132,10 +128,10 @@ def processMain( queue ):
         frame = queue.get()
         if frame is None:
             break
-        print "Video", len(frame)
+        print "Video", len(frame[-1])
         # workaround for a single frame
         f = open( TMP_VIDEO_FILE, "wb" )
-        f.write( frame )
+        f.write( frame[-1] )
         f.close()
         cap = cv2.VideoCapture( TMP_VIDEO_FILE )
         ret, img = cap.read()
@@ -147,27 +143,21 @@ def processMain( queue ):
                 key = cv2.waitKey(200)
 
 
-def videoCallback( data, robot=None, debug=False ):
-    global g_vf, g_queueOut, g_processor
-    g_vf.append( data )
-    frame = g_vf.getFrame()
-    if frame:
-        if g_queueOut is None:
-            g_queueOut = Queue()
-            g_processor = Process( target=processMain, args=(g_queueOut,) )
-            g_processor.daemon = True
-            g_processor.start()
-        g_queueOut.put_nowait( frame ) # H264 compressed video frame
+def videoCallback( frame, robot=None, debug=False ):
+    global g_queueOut, g_processor
+    if g_queueOut is None:
+        g_queueOut = Queue()
+        g_processor = Process( target=processMain, args=(g_queueOut,) )
+        g_processor.daemon = True
+        g_processor.start()
+    g_queueOut.put_nowait( frame ) # H264 compressed video frame
 
 
 
 
 def testCamera( drone ):
     "Collect camera data without takeoff"
-    global g_vf
-    g_vf = VideoFrames( onlyIFrames=True, verbose=False )
-    drone.videoCbk = videoCallback
-#    drone.videoCbk = videoCallbackSingleThread
+    drone.setVideoCallback( videoCallback )
     drone.moveCamera( tilt=-100, pan=0 )
     drone.videoEnable()
     for i in xrange(200):
@@ -180,8 +170,6 @@ def testCamera( drone ):
 
 def testAutomaticLanding( drone ):
     "Takeoff and land"
-    global g_vf
-    g_vf = VideoFrames( onlyIFrames=True, verbose=False )
     drone.videoCbk = videoCallback
     drone.moveCamera( tilt=-100, pan=0 )
     drone.videoEnable()
@@ -205,7 +193,7 @@ def testAutomaticLanding( drone ):
         g_processor.join()
 
 
-def testVideoStream( filename, stopAt=None ):
+def replayVideoStream( filename, stopAt=None ):
     "revise only logged video data"
     # convert navdata to video if necessary
     if "navdata" in filename:
@@ -243,7 +231,7 @@ if __name__ == "__main__":
         stopAt = None
         if len(sys.argv) > 3:
             stopAt = int(sys.argv[3])
-        testVideoStream( filename=filename, stopAt=stopAt )
+        replayVideoStream( filename=filename, stopAt=stopAt )
         sys.exit(0)
 
     metalog=None
@@ -252,9 +240,9 @@ if __name__ == "__main__":
     if len(sys.argv) > 3 and sys.argv[3] == 'F':
         disableAsserts()
 
-    drone = Bebop( metalog=metalog )
-#    testCamera( drone )
-    testAutomaticLanding( drone )
+    drone = Bebop( metalog=metalog, onlyIFrames=True )
+    testCamera( drone )
+#    testAutomaticLanding( drone )
     print "Battery:", drone.battery, "(%.2f, %.2f, %.2f)" % drone.position
 
 # vim: expandtab sw=4 ts=4 
