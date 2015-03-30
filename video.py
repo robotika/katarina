@@ -14,6 +14,7 @@ class VideoFrames:
         self.onlyIFrames = onlyIFrames
         self.verbose = verbose
         self.currentFrameNumber = None
+        self.currentFrameFlags = None
         self.parts = None
         self.frames = []
         self.statFirst, self.statLast = None, None
@@ -33,7 +34,7 @@ class VideoFrames:
                             print (self.currentFrameNumber, i, len(self.parts))
                         continue
                     s += d
-                self.frames.append( s )
+                self.frames.append( (self.currentFrameFlags, s) )
             if self.verbose:
                 print "processing", frameNumber
                 if self.statFirst is None:
@@ -41,6 +42,7 @@ class VideoFrames:
                 self.statLast = frameNumber
                 self.statCount += 1
             self.currentFrameNumber = frameNumber
+            self.currentFrameFlags = frameFlags
             if self.onlyIFrames and frameFlags != 1:
                 self.parts = None
             else:
@@ -51,12 +53,18 @@ class VideoFrames:
                     print "duplicity", (frameNumber, fragmentNumber)
             self.parts[ fragmentNumber ] = data
 
-    def getFrame( self ):
+    def getFrameEx( self ):
         if len(self.frames) == 0:
             return None
         frame = self.frames[0]
         self.frames = self.frames[1:]
         return frame
+
+    def getFrame( self ):
+        ret = self.getFrameEx()
+        if ret is None:
+            return None
+        return ret[1] # strip I/P flag
 
     def stat( self ):
         if self.verbose:

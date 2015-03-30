@@ -31,7 +31,7 @@ def processMain( queue ):
         if frame is None:
             break
         sys.stderr.write('.')
-        ret = cvideo.frame( img, 1, frame )
+        ret = cvideo.frame( img, frame[0], frame[1] )
         assert ret
         cv2.imshow('image', img)
         key = cv2.waitKey(1)
@@ -42,9 +42,9 @@ def processMain( queue ):
 def videoCallback( data, robot=None, debug=False ):
     global g_vf, g_queueOut, g_processor
     if g_vf is None:
-        g_vf = VideoFrames( onlyIFrames=True, verbose=False )
+        g_vf = VideoFrames( onlyIFrames=False, verbose=False )
     g_vf.append( data )
-    frame = g_vf.getFrame()
+    frame = g_vf.getFrameEx()
     if frame:
         if g_queueOut is None:
             g_queueOut = Queue()
