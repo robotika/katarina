@@ -101,6 +101,7 @@ def detectRoundel( frame, debug=False ):
 g_index = 0
 g_queueOut = None
 g_processor = None
+g_queueResults = None
 
 def videoCallbackSingleThread( frame, robot=None, debug=False ):
     global g_index
@@ -122,10 +123,10 @@ def videoCallbackSingleThread( frame, robot=None, debug=False ):
 
 
 
-def processMain( queue ):
+def processMain( queueIn, queueOut ):
     debug = False
     while True:
-        frame = queue.get()
+        frame = queueIn.get()
         if frame is None:
             break
         print "Video", len(frame[-1])
@@ -137,27 +138,36 @@ def processMain( queue ):
         ret, img = cap.read()
         cap.release()
         if ret:
-            print detectRoundel( img, debug=debug )
+            result = detectRoundel( img, debug=debug )
+            print result
+            queueOut.put( (frame[0], result) )
             if debug:
                 cv2.imshow('image', img)
                 key = cv2.waitKey(200)
 
 
 def videoCallback( frame, robot=None, debug=False ):
-    global g_queueOut, g_processor
+    global g_queueOut, g_processor, g_queueResults
     if g_queueOut is None:
         g_queueOut = Queue()
-        g_processor = Process( target=processMain, args=(g_queueOut,) )
+        g_queueResults = Queue()
+        g_processor = Process( target=processMain, args=(g_queueOut,g_queueResults,) )
         g_processor.daemon = True
         g_processor.start()
     g_queueOut.put_nowait( frame ) # H264 compressed video frame
+
+def videoCallbackResults():
+    if g_queueResults is None or g_queueResults.empty():
+        return None
+    return g_queueResults.get()
+    
 
 
 
 
 def testCamera( drone ):
     "Collect camera data without takeoff"
-    drone.setVideoCallback( videoCallback )
+    drone.setVideoCallback( videoCallback, videoCallbackResults )
     drone.moveCamera( tilt=-100, pan=0 )
     drone.videoEnable()
     for i in xrange(200):

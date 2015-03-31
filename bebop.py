@@ -45,6 +45,7 @@ class Bebop:
         self.buf = ""
         self.videoFrameProcessor = VideoFrames( onlyIFrames=onlyIFrames, verbose=False )
         self.videoCbk = None
+        self.videoCbkResults = None
         self.battery = None
         self.flyingState = None
         self.flatTrimCompleted = False
@@ -118,8 +119,11 @@ class Bebop:
                     self.videoFrameProcessor.append( data )
                     frame = self.videoFrameProcessor.getFrameEx()
                     if frame:
-                        ret = self.videoCbk( frame, debug=self.metalog.replay )
+                        self.videoCbk( frame, debug=self.metalog.replay )
+                    if self.videoCbkResults:
+                        ret = self.videoCbkResults()
                         if ret is not None:
+                            print ret
                             self.lastImageResult = ret
                 data = self._update( createVideoAckPacket(data) )
             else:
@@ -128,8 +132,14 @@ class Bebop:
         return data
 
 
-    def setVideoCallback( self, cbk ):
+    def setVideoCallback( self, cbk, cbkResult=None ):
+        "set cbk for collected H.264 encoded video frames & access to results queue"
         self.videoCbk = cbk
+        if cbkResult is None:
+            self.videoCbkResults = None
+        else:
+            self.videoCbkResults = self.metalog.createLoggedInput( "cv2", cbkResult ).get
+        
 
 
     def config( self ):
