@@ -64,7 +64,7 @@ class VideoFrames:
         ret = self.getFrameEx()
         if ret is None:
             return None
-        return ret[1] # strip I/P flag
+        return ret[-1] # strip I/P flag
 
     def stat( self ):
         if self.verbose:
