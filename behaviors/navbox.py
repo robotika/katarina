@@ -52,7 +52,7 @@ def matchCircRect( circles, rectangles ):
 #    print circles
 #    print rectangles
     (centerX, centerY), rad = circles[0]
-    rect = [r for r in rectangles if math.hypot(r[0][0]-centerX, r[0][1]-centerY) < 2*rad]
+    rect = [r for r in rectangles if math.hypot(r[0][0]-centerX, r[0][1]-centerY) < 2.1*rad]
     if len(rect) < 2:
         return None
     tmpRect = sorted([(abs(max(r[1][0],r[1][1]) - 2*rad), r) for r in rect])
@@ -78,7 +78,7 @@ def detectRoundel( frame, debug=False ):
         cir = cv2.minEnclosingCircle(cnt)
         (x,y),radius = cir
         circleArea = math.pi*radius*radius
-        if area/circleArea > 0.70:
+        if area/circleArea > 0.64:
             circles.append( ((int(x+0.5),int(y+0.5)),int(radius+0.5)) )
     rectangles = removeDuplicities( rectangles )
     result = matchCircRect( circles=circles, rectangles=rectangles )
@@ -180,21 +180,54 @@ def testCamera( drone ):
 
 def testAutomaticLanding( drone ):
     "Takeoff and land"
-    drone.videoCbk = videoCallback
+    drone.setVideoCallback( videoCallback, videoCallbackResults )
     drone.moveCamera( tilt=-100, pan=0 )
     drone.videoEnable()
     try:
         drone.trim()
         drone.takeoff()
-        drone.flyToAltitude( 1.5 )
         print "COMPLETED", drone.altitude
+        prev = drone.lastImageResult
+        up = 0
+        left = 0
+        fwd = 0
         for i in xrange(1000):
+            if drone.altitude > 1.5:
+                up = -20
+            elif drone.altitude < 1.3:
+                up = 20
+            else:
+                up = 0
+
+            if prev != drone.lastImageResult:
+                left, fwd = 0, 0
+                print drone.lastImageResult
+                prev = drone.lastImageResult
+                if drone.lastImageResult is not None:
+                    index,result = drone.lastImageResult
+                    if result is not None:
+                        (centerX,centerY), point = result
+                        if centerY < 368/2 - 30:
+                            fwd = 20
+                        elif centerY > 368/2 + 30:
+                            fwd = -20
+                        else:
+                            fwd = 0
+                        if centerX < 640/2 - 30:
+                            left = 20
+                        elif centerY > 640/2 + 30:
+                            left = -20
+                        else:
+                            left = 0
+                        print "HETREERERE!", left, fwd
+
             print i,
-            drone.hover()
+            drone.update( cmd=movePCMDCmd( active=True, roll=left, pitch=fwd, yaw=0, gaz=up ) )
         drone.land()
     except ManualControlException, e:
         print
         print "ManualControlException"
+        drone.hover()
         if drone.flyingState is None or drone.flyingState == 1: # taking off
             drone.emergency()
         drone.land()
@@ -251,8 +284,8 @@ if __name__ == "__main__":
         disableAsserts()
 
     drone = Bebop( metalog=metalog, onlyIFrames=True )
-    testCamera( drone )
-#    testAutomaticLanding( drone )
+#    testCamera( drone )
+    testAutomaticLanding( drone )
     print "Battery:", drone.battery, "(%.2f, %.2f, %.2f)" % drone.position
 
 # vim: expandtab sw=4 ts=4 

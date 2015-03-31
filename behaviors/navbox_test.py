@@ -32,6 +32,12 @@ class NavBoxTest( unittest.TestCase ):
         self.assertEqual( matchCircRect(
             circles=[((549, 162), 39), ((282, 142), 19), ((282, 142), 21), ((196, 157), 37)],
             rectangles=[((355, 4), (7, 23), -90), ((4, 137), (7, 24), 0)]), None )
+
+    def testMissingDetection150331( self ):
+        self.assertEqual( matchCircRect(
+            circles=[((244, 272), 28)],
+            rectangles=[((245, 272), (28, 8), -86), ((255, 183), (147, 10), 0), ((241, 330), (58, 13),0)]), ((244, 272), (241, 330)) )
+
 if __name__ == "__main__":
     unittest.main() 
 # vim: expandtab sw=4 ts=4 
