@@ -9,7 +9,6 @@ import cv2
 
 from bebop import Bebop
 from commands import movePCMDCmd
-from video import VideoFrames
 from capdet import detectTwoColors, loadColors
 
 # this will be in new separate repository as common library fo robotika Python-powered robots
@@ -19,17 +18,12 @@ from apyros.manual import myKbhit, ManualControlException
 TMP_VIDEO_FILE = "video.bin"
 
 
-g_vf = None
-
-def videoCallback( data, robot=None, debug=False ):
-    global g_vf
-    g_vf.append( data )
-    frame = g_vf.getFrame()
+def videoCallback( frame, robot=None, debug=False ):
     if frame:
         print "Video", len(frame)
         # workaround for a single frame
         f = open( TMP_VIDEO_FILE, "wb" )
-        f.write( frame )
+        f.write( frame[-1] )
         f.close()
         cap = cv2.VideoCapture( TMP_VIDEO_FILE )
         ret, img = cap.read()
@@ -60,8 +54,6 @@ def videoCallback( data, robot=None, debug=False ):
 
 def demo0( drone ):
     print "Follow 2-color cap ..."
-    global g_vf
-    g_vf = VideoFrames( onlyIFrames=True, verbose=False )
     drone.videoCbk = videoCallback
     drone.videoEnable()
     for i in xrange(1000):
@@ -71,8 +63,6 @@ def demo0( drone ):
 
 def demo( drone ):
     print "Follow 2-color cap ..."
-    global g_vf
-    g_vf = VideoFrames( onlyIFrames=True, verbose=False )
     drone.videoCbk = videoCallback
     drone.videoEnable()
     try:
