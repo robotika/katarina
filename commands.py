@@ -189,14 +189,19 @@ class CommandSender( Thread ):
 
 class CommandSenderReplay( CommandSender ):
     "fake class to replay synced messages"
-    def __init__( self, commandChannel, hostPortPair ):
+    def __init__( self, commandChannel, hostPortPair, checkAsserts=True ):
         CommandSender.__init__( self, commandChannel, hostPortPair )
+        self.checkAsserts = checkAsserts
 
     def start( self ):
         "block default Thread behavior"
         print "STARTED Replay"
 
     def send( self, cmd ):
+        if not self.checkAsserts:
+            # ignore input completely
+            return
+
         prefix = self.command.debugRead(1)
         while prefix == self.INTERNAL_COMMAND_PREFIX:
             self.command.separator( self.updateSeq(self.cmd) ) # just verify command identity

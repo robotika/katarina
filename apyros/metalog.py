@@ -38,6 +38,9 @@ class MetaLog:
             self.filename = filename
             self.f = open( self.filename )
 
+    def areAssertsEnabled( self ):
+        global g_checkAssert
+        return g_checkAssert
 
     def getLog( self, prefix ):
         if not self.replay:

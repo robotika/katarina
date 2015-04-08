@@ -36,7 +36,7 @@ class Bebop:
         self.navdata.bind( ('',NAVDATA_PORT) )
         if metalog.replay:
             self.commandSender = CommandSenderReplay(metalog.createLoggedSocket( "cmd", headerFormat="<BBBI" ), 
-                    hostPortPair=(HOST, COMMAND_PORT))
+                    hostPortPair=(HOST, COMMAND_PORT), checkAsserts=metalog.areAssertsEnabled())
         else:
             self.commandSender = CommandSender(metalog.createLoggedSocket( "cmd", headerFormat="<BBBI" ), 
                     hostPortPair=(HOST, COMMAND_PORT))
