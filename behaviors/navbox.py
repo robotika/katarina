@@ -8,6 +8,7 @@
 import sys
 import math
 import cv2
+import os
 import numpy as np
 
 sys.path.append('..') # access to drone source without installation
@@ -125,6 +126,9 @@ def videoCallbackSingleThread( frame, robot=None, debug=False ):
 
 def processMain( queueIn, queueOut ):
     debug = False
+    for name in os.listdir("."):
+        if name.startswith("tmp_") and name.endswith(".jpg"):
+            os.remove(name)
     while True:
         frame = queueIn.get()
         if frame is None:
@@ -140,6 +144,7 @@ def processMain( queueIn, queueOut ):
         if ret:
             result = detectRoundel( img, debug=debug )
             print result
+            cv2.imwrite( "tmp_%03d.jpg" % frame[0], img )
             queueOut.put( (frame[0], result) )
             if debug:
                 cv2.imshow('image', img)
@@ -198,6 +203,7 @@ def testAutomaticLanding( drone ):
                 up = 20
             else:
                 up = 0
+            print "ALT", drone.altitude, up
 
             if prev != drone.lastImageResult:
                 left, fwd = 0, 0
