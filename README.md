@@ -73,3 +73,18 @@ ARDrone2. You can use this script also for detail verbose dump of recorded
 
 * demo.py --- integration of image processing with flight control (work in
   progress)
+
+
+# FAQ
+
+Q: I recently succeed to launch demo.py but I've a question about the 
+parameter <task> in some of your scripts, is there any list of task that 
+i should use to launch these scripts ? Are this just a name given to the 
+instance of the demo ?
+
+A: The "task" parameter is dummy at the moment. It should be named rather
+"comment", because this is the way how I mainly use it (it is automatically
+stored in metalog file), i.e. testWithTakeoffInWindyCondition. The plan is
+to use it for "task selection" in the future ...
+
+
