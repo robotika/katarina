@@ -88,3 +88,32 @@ stored in metalog file), i.e. testWithTakeoffInWindyCondition. The plan is
 to use it for "task selection" in the future ...
 
 
+Q: What is module "cvideo"?
+
+A: "cvideo" is taken from Heidi/ARDrone2:
+https://github.com/robotika/heidi/tree/master/cvideo
+It is used for decoding H.264 encoded frames into numpy array used as image
+in OpenCV2. OpenCV2 can open stream or file but I could not convince to read
+several frames.
+
+
+Q: What is the state of your work? Is every module finished?
+
+A: The basic code in bebop.py, commands.py and navdata.py (+video.py) are
+ready to use. It was tested under Windows 7/Python 2.7 and I am sure that in
+particular https://github.com/robotika/katarina/blob/master/apyros/manual.py
+will require revision for Linux and Mac OS.
+
+The other modules are rather ""work in progress"", where the closest to
+reasonable image multiprocessing is
+https://github.com/robotika/katarina/blob/master/behaviors/navbox.py
+(as example, the image processing algorithm needs some improvements).
+
+
+Q: Does demo.py open video player?
+
+A: No it should not. In reality I preffer rather watch/check the drone what
+it is doing and AFTER review the video and processed images. Note, that demo.py
+needs multiprocessing revision as mentioned in previous question.
+For debugging OpenCV2 is used for display images.
+
