@@ -117,3 +117,10 @@ it is doing and AFTER review the video and processed images. Note, that demo.py
 needs multiprocessing revision as mentioned in previous question.
 For debugging OpenCV2 is used for display images.
 
+
+Q: Can I get images from down-pointing camera?
+
+A: As far as I know the answer is NO. Current API does not suppor it.
+On the other hand you can select region of interest of forward looking camera by:
+    drone.moveCamera( tilt=-100, pan=0 )
+
