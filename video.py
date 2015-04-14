@@ -28,13 +28,16 @@ class VideoFrames:
         if frameNumber != self.currentFrameNumber:
             if self.currentFrameNumber is not None and self.parts is not None:
                 s = ""
+                complete = True
                 for i,d in enumerate(self.parts):
                     if d is None:
                         if self.verbose:
                             print (self.currentFrameNumber, i, len(self.parts))
+                        complete = False
                         continue
                     s += d
-                self.frames.append( (self.currentFrameNumber, self.currentFrameFlags, s) )
+                if complete:
+                    self.frames.append( (self.currentFrameNumber, self.currentFrameFlags, s) )
             if self.verbose:
                 print "processing", frameNumber
                 if self.statFirst is None:
