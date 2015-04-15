@@ -124,3 +124,10 @@ A: As far as I know the answer is NO. Current API does not suppor it.
 On the other hand you can select region of interest of forward looking camera by:
     drone.moveCamera( tilt=-100, pan=0 )
 
+
+Q: I noticed that "drone.battery" always displays "None", did you get the same?
+
+A: This means that there was no info packet with battery change status. I would try
+to integrate ARCOMMANDS_ID_COMMON_SETTINGS_CMD_ALLSETTINGS, which should (?)
+report "all settings" (including battery status?).
+
