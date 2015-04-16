@@ -129,6 +129,21 @@ def resetHomeCmd():
     # ARCOMMANDS_ID_ARDRONE3_GPSSETTINGS_CMD_RESETHOME = 1
     return struct.pack("BBH", 1, 23, 1)
 
+# NOT TESTED - Aldo? Altitude?
+def setHomeCmd( lat, lon, altitude=0.0 ):
+    # ARCOMMANDS_ID_PROJECT_ARDRONE3 = 1
+    # ARCOMMANDS_ID_ARDRONE3_CLASS_GPSSETTINGS = 23
+    # ARCOMMANDS_ID_ARDRONE3_GPSSETTINGS_CMD_SETHOME = 0,
+    return struct.pack("<BBHddd", 1, 23, 0, lat, lon, altitude)
+
+# NOT TESTED - Aldo?
+def navigateHomeCmd( go=True ):
+    "navigate home - to STOP use go=False"
+    # ARCOMMANDS_ID_PROJECT_ARDRONE3 = 1,
+    # ARCOMMANDS_ID_ARDRONE3_CLASS_PILOTING = 0,
+    # ARCOMMANDS_ID_ARDRONE3_PILOTING_CMD_NAVIGATEHOME = 5,
+    return struct.pack("<BBHB", 1, 0, 5, go)
+
 
 def packData( payload, ackRequest=False ):
     frameType = 2
