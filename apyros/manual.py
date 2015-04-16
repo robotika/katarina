@@ -35,7 +35,12 @@ else:
     # pygame.init()
     # screen = pygame.display.set_mode((100,100))
 
-
+if __name__ == "__main__":
+    # for testing of myKbhit on various OS
+    print "Press Any Key!"
+    while not myKbhit():
+        pass
+    print "Thank you"
 
 # vim: expandtab sw=4 ts=4 
 
