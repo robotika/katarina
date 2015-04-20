@@ -9,7 +9,7 @@
 # Note, that 3rd case can be split into two when at least send/receive
 # structure is kept or even that is ignored.
 
-import os.path
+import os
 import datetime
 import sys
 
@@ -28,6 +28,8 @@ class MetaLog:
     def __init__( self, filename=None ):
         if filename is None:
             self.replay = False
+            if not os.path.exists("logs"):
+                os.mkdir("logs")
             self.filename = datetime.datetime.now().strftime("logs/meta_%y%m%d_%H%M%S.log")
             sys.stderr.write( "METALOG: %s\n" % self.filename )
             self.f = open( self.filename, "w" )
