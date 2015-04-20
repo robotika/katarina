@@ -57,6 +57,7 @@ class Bebop:
         self.positionGPS = None
         self.cameraTilt, self.cameraPan = 0,0
         self.lastImageResult = None
+        self.navigateHomeState = None
         self.config()
         self.commandSender.start()
         

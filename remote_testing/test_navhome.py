@@ -38,6 +38,13 @@ def testNavHome( drone, lat, lon ):
         for i in xrange(1000):
             sys.stderr.write('.')
             drone.update( cmd=None )
+            if drone.navigateHomeState == 3: # pending - another confirmation?
+                print "PENDING"
+                break
+        drone.update( cmd=navigateHomeCmd() )
+        for i in xrange(1000):
+            sys.stderr.write('.')
+            drone.update( cmd=None )
         drone.update( cmd=navigateHomeCmd(False) )
         drone.land()
     except ManualControlException, e:

@@ -207,6 +207,7 @@ def parseData( data, robot, verbose=False ):
                 states = ["available", "inProgress", "unavailable", "pending", "low_battery", "too_much_angle"]
                 reasons = ["userRequest", "connectionLost", "lowBattery", "finished", "stopped", "disabled", "enabled"]
                 print "NavigateHomeStateChanged", state, states[state], reasons[reason]
+                robot.navigateHomeState = state
             else:
                 print "Unknown Piloting State", commandId,
                 printHex( data[:frameSize] )
