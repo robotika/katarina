@@ -115,6 +115,14 @@ def requestAllSettingsCmd():
     # ARCOMMANDS_ID_COMMON_SETTINGS_CMD_ALLSETTINGS = 0
     return struct.pack("BBH", 0, 2, 0)
 
+# NOT TESTED - Charles??
+def requestAllStatesCmd():
+    # ARCOMMANDS_ID_PROJECT_COMMON = 0,
+    # ARCOMMANDS_ID_COMMON_CLASS_COMMON = 4,
+    # ARCOMMANDS_ID_COMMON_COMMON_CMD_ALLSTATES = 0
+    return struct.pack("BBH", 0, 4, 0)
+
+
 def moveCameraCmd( tilt, pan ):
     "Tilt/Pan camera consign for the drone (in degrees)"
     # ARCOMMANDS_ID_PROJECT_ARDRONE3 = 1,

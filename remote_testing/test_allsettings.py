@@ -22,7 +22,7 @@ from apyros.manual import myKbhit, ManualControlException
 
 
 def testAllSettings( drone ):
-    drone.update( cmd=requestAllSettingsCmd() )
+    drone.update( cmd=requestAllStatesCmd() )
     for i in xrange(200):
         sys.stderr.write('.')
         drone.update( cmd=None )
