@@ -15,6 +15,7 @@ if BEBOP_ROOT not in sys.path:
 
 from bebop import Bebop
 from commands import requestAllSettingsCmd
+from commands import requestAllStatesCmd
 
 from apyros.metalog import MetaLog, disableAsserts
 from apyros.manual import myKbhit, ManualControlException
@@ -22,6 +23,12 @@ from apyros.manual import myKbhit, ManualControlException
 
 
 def testAllSettings( drone ):
+    drone.update( cmd=requestAllSettingsCmd() )
+    for i in xrange(200):
+        sys.stderr.write('.')
+        drone.update( cmd=None )
+
+def testAllStates( drone ):
     drone.update( cmd=requestAllStatesCmd() )
     for i in xrange(200):
         sys.stderr.write('.')
@@ -41,6 +48,7 @@ if __name__ == "__main__":
 
     drone = Bebop( metalog=metalog, onlyIFrames=True )
     testAllSettings( drone )
+    testAllStates( drone )
     print "Battery:", drone.battery # this time you should not see None any more
 
 # vim: expandtab sw=4 ts=4 
