@@ -60,7 +60,7 @@ def parseData( data, robot, verbose=False ):
         assert frameSize >= 12, frameSize
         assert frameId == 0x7D, hex(frameId)
         frameNumber, frameFlags, fragmentNumber, fragmentsPerFrame = struct.unpack("<HBBB", data[7:12])
-        print "Video", frameNumber, frameFlags, fragmentNumber, fragmentsPerFrame
+        #print "Video", frameNumber, frameFlags, fragmentNumber, fragmentsPerFrame
         #printHex( data[:20] )
         data = data[frameSize:]
         return data
@@ -187,6 +187,14 @@ def parseData( data, robot, verbose=False ):
                 states = ["stopped", "started", "failed", "autostopped"]
                 print "Video State Changed:", states[state], massStorageId
 
+        elif (commandProject, commandClass) == (1,12):
+            # ARCOMMANDS_ID_ARDRONE3_CLASS_SPEEDSETTINGSSTATE
+            #  ARCOMMANDS_ID_ARDRONE3_SPEEDSETTINGSSTATE_CMD_MAXVERTICALSPEEDCHANGED = 0,
+            #  ARCOMMANDS_ID_ARDRONE3_SPEEDSETTINGSSTATE_CMD_MAXROTATIONSPEEDCHANGED,
+            #  ARCOMMANDS_ID_ARDRONE3_SPEEDSETTINGSSTATE_CMD_HULLPROTECTIONCHANGED,
+            #  ARCOMMANDS_ID_ARDRONE3_SPEEDSETTINGSSTATE_CMD_OUTDOORCHANGED,
+            pass
+
         elif (commandProject, commandClass) == (1,16):
             # ARCOMMANDS_ID_ARDRONE3_CLASS_SETTINGSSTATE = 16,
             if commandId == 4:
@@ -216,6 +224,12 @@ def parseData( data, robot, verbose=False ):
             states = ["enabled", "disabled", "error"]
             if verbose:
                 print "Video Enabled State", state, states[state]
+
+        elif (commandProject, commandClass, commandId) == (1,24,0):
+            # ARCOMMANDS_ID_ARDRONE3_CLASS_GPSSETTINGSSTATE = 24,
+            # ARCOMMANDS_ID_ARDRONE3_GPSSETTINGSSTATE_CMD_HOMECHANGED = 0,
+            if verbose:
+                print "Home changed", struct.unpack("dd", data[11:11+16])
 
         elif (commandProject, commandClass, commandId) == (1,24,2):
             # ARCOMMANDS_ID_ARDRONE3_CLASS_GPSSETTINGSSTATE = 24,
