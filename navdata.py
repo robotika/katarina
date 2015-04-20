@@ -112,7 +112,41 @@ def parseData( data, robot, verbose=False ):
             print "UNKNOWN Project", commandProject
     elif frameId == 0x7E:
         commandProject, commandClass, commandId = struct.unpack("BBH",  data[7:7+4])
-        if (commandProject, commandClass, commandId) == (0,5,1):
+        if (commandProject, commandClass) == (0,3):
+            # ARCOMMANDS_ID_COMMON_CLASS_SETTINGSSTATE = 3,
+            if commandId == 0:
+                # ARCOMMANDS_ID_COMMON_SETTINGSSTATE_CMD_ALLSETTINGSCHANGED = 0
+                if verbose:
+                    print "AllSettings - done."
+            elif commandId == 2:
+                # ARCOMMANDS_ID_COMMON_SETTINGSSTATE_CMD_PRODUCTNAMECHANGED = 2
+                if verbose:
+                    print "ProductName", data[11:frameSize-1]
+            elif commandId == 3:
+                # ARCOMMANDS_ID_COMMON_SETTINGSSTATE_CMD_PRODUCTVERSIONCHANGED = 3
+                if verbose:
+                    print "ProductVersion", data[11:frameSize-1]
+            elif commandId == 4:
+                # ARCOMMANDS_ID_COMMON_SETTINGSSTATE_CMD_PRODUCTSERIALHIGHCHANGED = 4
+                if verbose:
+                    print "ProductSerialHigh", data[11:frameSize-1]
+            elif commandId == 5:
+                # ARCOMMANDS_ID_COMMON_SETTINGSSTATE_CMD_PRODUCTSERIALLOWCHANGED = 5
+                if verbose:
+                    print "ProductSerialLow", data[11:frameSize-1]
+            elif commandId == 6:
+                # ARCOMMANDS_ID_COMMON_SETTINGSSTATE_CMD_COUNTRYCHANGED = 6
+                if verbose:
+                    print "Country", data[11:frameSize-1]                    
+            elif commandId == 7:
+                # ARCOMMANDS_ID_COMMON_SETTINGSSTATE_CMD_AUTOCOUNTRYCHANGED = 7
+                if verbose:
+                    print "AutoCountry", struct.unpack("B", data[11:12])[0]
+            else:
+                if verbose:
+                    print "Unknown(0,3)", commandId
+                    printHex( data[:frameSize] )
+        elif (commandProject, commandClass, commandId) == (0,5,1):
             battery = struct.unpack("B", data[11:12])[0]
             robot.battery = battery
             if verbose:
@@ -123,6 +157,11 @@ def parseData( data, robot, verbose=False ):
         elif (commandProject, commandClass, commandId) == (0,5,5):
             if verbose:
                 print "Time:", data[11:frameSize-1]
+        elif (commandProject, commandClass, commandId) == (0,10,0):
+            # ARCOMMANDS_ID_COMMON_CLASS_WIFISETTINGSSTATE = 10,
+            # ARCOMMANDS_ID_COMMON_WIFISETTINGSSTATE_CMD_OUTDOORSETTINGSCHANGED
+            if verbose:
+                print "WiFi Outdoor:", struct.unpack("B", data[11:12])[0]
         elif (commandProject, commandClass) == (0,14):
             # ARCOMMANDS_ID_COMMON_CLASS_CALIBRATIONSTATE = 14,
             if commandId == 0:
@@ -170,6 +209,24 @@ def parseData( data, robot, verbose=False ):
                 print "NavigateHomeStateChanged", state, states[state], reasons[reason]
             else:
                 print "Unknown Piloting State", commandId,
+                printHex( data[:frameSize] )
+
+        elif (commandProject, commandClass) == (1,6):
+            # ARCOMMANDS_ID_ARDRONE3_CLASS_PILOTINGSETTINGSSTATE = 6,
+            if commandId == 0:
+                # ARCOMMANDS_ID_ARDRONE3_PILOTINGSETTINGSSTATE_CMD_MAXALTITUDECHANGED = 0,
+                if verbose:
+                    print "MaxAltitude:", struct.unpack("fff", data[11:11+3*4])
+            elif commandId == 1:
+                # ARCOMMANDS_ID_ARDRONE3_PILOTINGSETTINGSSTATE_CMD_MAXTILTCHANGED = 1,
+                if verbose:
+                    print "MaxTilt:", struct.unpack("fff", data[11:11+3*4])
+            elif commandId == 2:
+                # ARCOMMANDS_ID_ARDRONE3_PILOTINGSETTINGSSTATE_CMD_ABSOLUTCONTROLCHANGED,
+                if verbose:
+                    print "AbsoluteControl:", struct.unpack("B", data[11:12])[0]
+            else:
+                print "Unknown Piloting Settings State", commandId,
                 printHex( data[:frameSize] )
 
         elif (commandProject, commandClass, commandId) == (1,8,0):
