@@ -5,13 +5,17 @@
        ./video2stdout.py | ffplay -
 """
 import sys
+import os
+import inspect
 
 # http://stackoverflow.com/questions/10020325/make-python-stop-emitting-a-carriage-return-when-writing-newlines-to-sys-stdout
 if sys.platform == "win32":
-   import os, msvcrt
+   import msvcrt
    msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
 
-sys.path.append('..') # access to drone source without installation
+BEBOP_ROOT = os.path.realpath(os.path.abspath(os.path.join(os.path.split(inspect.getfile( inspect.currentframe() ))[0],"..")))
+if BEBOP_ROOT not in sys.path:
+    sys.path.insert(0, BEBOP_ROOT) # access to drone source without installation
 from bebop import Bebop
 
 def videoCallback( frame, robot=None, debug=False ):

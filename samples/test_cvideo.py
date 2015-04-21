@@ -5,8 +5,12 @@
        ./test_cvideo.py <note> [<metalog> [<F>]]
 """
 import sys
+import os
+import inspect
 
-sys.path.append('..') # access to drone source without installation
+BEBOP_ROOT = os.path.realpath(os.path.abspath(os.path.join(os.path.split(inspect.getfile( inspect.currentframe() ))[0],"..")))
+if BEBOP_ROOT not in sys.path:
+    sys.path.insert(0, BEBOP_ROOT) # access to drone source without installation
 from bebop import Bebop
 from apyros.metalog import MetaLog, disableAsserts
 from apyros.manual import myKbhit, ManualControlException
