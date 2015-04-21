@@ -108,14 +108,14 @@ def videoStreamingCmd( enable ):
     # ARCOMMANDS_ID_ARDRONE3_MEDIASTREAMING_CMD_VIDEOENABLE = 0,        
     return struct.pack("BBHB", 1, 21, 0, enable)
 
-# NOT TESTED - Charles??
+
 def requestAllSettingsCmd():
     # ARCOMMANDS_ID_PROJECT_COMMON = 0,
     # ARCOMMANDS_ID_COMMON_CLASS_SETTINGS = 2,
     # ARCOMMANDS_ID_COMMON_SETTINGS_CMD_ALLSETTINGS = 0
     return struct.pack("BBH", 0, 2, 0)
 
-# NOT TESTED - Charles??
+
 def requestAllStatesCmd():
     # ARCOMMANDS_ID_PROJECT_COMMON = 0,
     # ARCOMMANDS_ID_COMMON_CLASS_COMMON = 4,

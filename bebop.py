@@ -152,6 +152,8 @@ class Bebop:
         for cmd in setSpeedSettingsCmdList( maxVerticalSpeed=1.0, maxRotationSpeed=90.0, 
                 hullProtection=True, outdoor=True ):
             self.update( cmd=cmd )
+        self.update( cmd=requestAllStatesCmd() )
+        self.update( cmd=requestAllSettingsCmd() )
         self.moveCamera( tilt=self.cameraTilt, pan=self.cameraPan )
         self.update( videoAutorecordingCmd( enabled=False ) )
 

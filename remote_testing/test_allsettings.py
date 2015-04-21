@@ -1,7 +1,7 @@
 #!/usr/bin/python
 """
   Test request of all drone settings.
-  status: !NOT TESTED! (requested Charles/France(?))
+  status: TESTED, Charles/France 2015-04-20 ... integrated into Bebop initial config()
   usage:
        ./test_allsettings.py <dummytask> [<metalog> [<F>]]
 """
