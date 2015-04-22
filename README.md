@@ -131,3 +131,10 @@ A: This means that there was no info packet with battery change status. I would 
 to integrate ARCOMMANDS_ID_COMMON_SETTINGS_CMD_ALLSETTINGS, which should (?)
 report "all settings" (including battery status?).
 
+
+Q: I tried to use drone.flyToAltitude(3.0), but the drone does not fly to 3 meters. Why?
+
+A: Please note, there is second parameter "timeout" with very low default value 3 seconds. So you
+can write something like drone.flyToAltitude(3.0, timeout=20). Also note that the maximum
+altitude is limited by drone settings.
+
