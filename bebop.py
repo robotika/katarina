@@ -90,7 +90,7 @@ class Bebop:
         self.commandSender.send( cmd )
 
         while len(self.buf) == 0:
-            data = self.navdata.recv(4094)
+            data = self.navdata.recv(40960)
             self.buf += data
         data, self.buf = cutPacket( self.buf )
         return data
