@@ -99,6 +99,10 @@ def parseData( data, robot, verbose=False ):
                 robot.altitude = struct.unpack("d", data[11:11+8])[0]            
                 if verbose:
                     print "Altitude", robot.altitude
+            elif (commandClass, commandId) == (4,9):
+                tmpGPS = struct.unpack("dddBBB", data[11:11+8*3+3])
+                if verbose:
+                    print "GpsLocationChanged", tmpGPS
             elif (commandClass, commandId) == (25,0):
                 tilt,pan = struct.unpack("BB", data[11:11+2])
                 if verbose:
@@ -226,6 +230,20 @@ def parseData( data, robot, verbose=False ):
                 # ARCOMMANDS_ID_ARDRONE3_PILOTINGSETTINGSSTATE_CMD_ABSOLUTCONTROLCHANGED,
                 if verbose:
                     print "AbsoluteControl:", struct.unpack("B", data[11:12])[0]
+            elif commandId == 3:
+                # MaxDistanceChanged
+                if verbose:
+                    print "MaxDistanceChanged", struct.unpack("f", data[11:15])[0]
+            elif commandId == 4:
+                # NoFlyOverMaxDistanceChanged
+                if verbose:
+                    print "NoFlyOverMaxDistanceChanged", struct.unpack("B", data[11:12])[0]
+            elif commandId == 10:
+                # BankedTurnChanged
+                # If banked turn mode is enabled, the drone will use yaw values from the piloting command
+                # to infer with roll and pitch on the drone when its horizontal speed is not null.
+                if verbose:
+                    print "BankedTurnChanged", struct.unpack("B", data[11:12])[0]
             else:
                 print "Unknown Piloting Settings State", commandId,
                 printHex( data[:frameSize] )
