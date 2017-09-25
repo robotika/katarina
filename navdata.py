@@ -161,6 +161,9 @@ def parseData( data, robot, verbose=False ):
         elif (commandProject, commandClass, commandId) == (0,5,5):
             if verbose:
                 print "Time:", data[11:frameSize-1]
+        elif (commandProject, commandClass, commandId) == (0,5,8):
+            if verbose:
+                print "SensorsStatesListChanged:", struct.unpack("IB", data[11:16])
         elif (commandProject, commandClass, commandId) == (0,10,0):
             # ARCOMMANDS_ID_COMMON_CLASS_WIFISETTINGSSTATE = 10,
             # ARCOMMANDS_ID_COMMON_WIFISETTINGSSTATE_CMD_OUTDOORSETTINGSCHANGED
@@ -187,6 +190,13 @@ def parseData( data, robot, verbose=False ):
                 if verbose:
                     print "Calibration", commandId,
                     printHex( data[:frameSize] )
+        elif (commandProject, commandClass, commandId) == (0,18,2):
+            if verbose:
+                print "ARLibsVersionsState/DeviceLibARCommandsVersion:", data[11:frameSize-1]
+        elif (commandProject, commandClass, commandId) == (0,30,0):
+            if verbose:
+                # triggered, when the drone generates a new run id (generally right after a take off)
+                print "RunState - Current run id:", data[11:frameSize-1]
 
         elif (commandProject, commandClass) == (1,4):
             # ARCOMMANDS_ID_ARDRONE3_CLASS_PILOTINGSTATE = 4,
@@ -262,6 +272,11 @@ def parseData( data, robot, verbose=False ):
                 state, massStorageId = struct.unpack("IB", data[11:11+4+1])
                 states = ["stopped", "started", "failed", "autostopped"]
                 print "Video State Changed:", states[state], massStorageId
+
+        elif (commandProject, commandClass) == (1,10):
+            if verbose:
+                print "WifiSettingsState", commandId,
+                printHex( data[11:frameSize] )
 
         elif (commandProject, commandClass) == (1,12):
             # ARCOMMANDS_ID_ARDRONE3_CLASS_SPEEDSETTINGSSTATE
