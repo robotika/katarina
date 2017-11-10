@@ -66,7 +66,11 @@ class Bebop:
         filename = "tmp.bin" # TODO combination outDir + date/time
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # TCP
         s.connect( (HOST, DISCOVERY_PORT) )
-        s.send( '{"controller_type":"computer", "controller_name":"katarina", "d2c_port":"43210"}' )
+        s.send( '{"controller_type":"computer", \
+                  "controller_name":"katarina", \
+                  "d2c_port":"43210", \
+                  "arstream2_client_stream_port":55004, \
+                  "arstream2_client_control_port":55005}' )
         f = open( filename, "wb" )
         while True:
             data = s.recv(10240)
