@@ -99,15 +99,21 @@ def parseData( data, robot, verbose=False ):
                 robot.altitude = struct.unpack("d", data[11:11+8])[0]            
                 if verbose:
                     print "Altitude", robot.altitude
+            elif commandClass == 4:
+                if verbose:
+                    print "Piloting State change", commandId
             elif (commandClass, commandId) == (25,0):
                 tilt,pan = struct.unpack("BB", data[11:11+2])
                 if verbose:
                     print "CameraState Tilt/Pan", tilt, pan
+            elif commandClass == 25:
+                if verbose:
+                    print "CameraState changed", commandId
             else:
                 if verbose:
                     print "UNKNOWN",
                     printHex( data[:frameSize] )
-                    assert False
+                    assert False, (commandClass, commandId)
         else:
             print "UNKNOWN Project", commandProject
     elif frameId == 0x7E:
